@@ -1,0 +1,14 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Rahasia / environment (di mana pun letaknya)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+auth.json
