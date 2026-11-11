@@ -9,20 +9,30 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Akun contoh untuk DEVELOPMENT saja. Ganti/hapus sebelum production.
+     * Membuat akun awal dari variabel .env (SEED_*_EMAIL / SEED_*_PASSWORD).
+     * Akun yang email/password-nya tidak diisi akan dilewati.
      */
     public function run(): void
     {
         $accounts = [
-            ['Admin', 'admin@example.com', Role::Admin],
-            ['Co-Admin', 'coadmin@example.com', Role::CoAdmin],
-            ['User Biasa', 'user@example.com', Role::User],
+            ['Admin', 'SEED_ADMIN', Role::Admin],
+            ['Co-Admin', 'SEED_COADMIN', Role::CoAdmin],
+            ['User Biasa', 'SEED_USER', Role::User],
         ];
 
-        foreach ($accounts as [$name, $email, $role]) {
+        foreach ($accounts as [$name, $prefix, $role]) {
+            $email = env("{$prefix}_EMAIL");
+            $password = env("{$prefix}_PASSWORD");
+
+            if (! $email || ! $password) {
+                $this->command?->warn("Lewati {$name}: {$prefix}_EMAIL / {$prefix}_PASSWORD belum diisi di .env");
+
+                continue;
+            }
+
             User::updateOrCreate(
                 ['email' => $email],
-                ['name' => $name, 'password' => 'password123', 'role' => $role],
+                ['name' => $name, 'password' => $password, 'role' => $role],
             );
         }
     }

@@ -122,15 +122,11 @@ npm run dev
 
 Buka http://localhost:5173
 
-### Akun contoh (hasil seeder, hanya untuk development)
+### Akun awal (hasil seeder)
 
-| Role | Email | Password |
-|---|---|---|
-| Admin | admin@example.com | password123 |
-| Co-Admin | coadmin@example.com | password123 |
-| User | user@example.com | password123 |
+Isi `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_COADMIN_*`, dan `SEED_USER_*` di `backend\.env`, lalu jalankan `php artisan db:seed`. Akun yang variabelnya kosong akan dilewati.
 
-> Ganti atau hapus akun ini sebelum deploy ke production.
+> Jangan commit `.env` dan gunakan password yang kuat di production.
 
 ## 4. Alur kerja harian
 
