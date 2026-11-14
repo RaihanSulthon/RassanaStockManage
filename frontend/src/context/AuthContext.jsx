@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import api, { TOKEN_KEY } from '../lib/api'
 
 const AuthContext = createContext(null)
@@ -6,6 +6,13 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(() => !!localStorage.getItem(TOKEN_KEY))
+  // Akun terakhir yang login di tab ini. Dipakai Login agar tidak membawa akun lain
+  // ke halaman terakhir akun sebelumnya (bisa jadi halaman yang tidak boleh dibuka).
+  const lastUserId = useRef(null)
+  useEffect(() => {
+    if (user) lastUserId.current = user.id
+  }, [user])
+  const getLastUserId = useCallback(() => lastUserId.current, [])
 
   // Pulihkan sesi saat halaman di-refresh
   useEffect(() => {
@@ -41,7 +48,7 @@ export function AuthProvider({ children }) {
     setUser(null)
   }, [])
 
-  const value = useMemo(() => ({ user, loading, login, logout }), [user, loading, login, logout])
+  const value = useMemo(() => ({ user, loading, login, logout, getLastUserId }), [user, loading, login, logout, getLastUserId])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

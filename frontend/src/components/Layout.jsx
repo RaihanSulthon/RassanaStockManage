@@ -28,7 +28,6 @@ const MENU = {
     ['-', 'Master Data'],
     ['/master/items', 'Barang & Harga'],
     ['/master/vendors', 'Vendor'],
-    ['/master/locations', 'Lokasi'],
   ],
   finance: [
     ['/', 'Dashboard'],
@@ -38,7 +37,6 @@ const MENU = {
     ['-', 'Master Data'],
     ['/master/items', 'Barang & Harga'],
     ['/master/vendors', 'Vendor'],
-    ['/master/locations', 'Lokasi'],
   ],
   admin: [
     ['/', 'Dashboard'],

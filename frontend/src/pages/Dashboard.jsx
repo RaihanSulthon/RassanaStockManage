@@ -22,14 +22,14 @@ const GUIDE = {
     'Terima PR dan validasi dengan data stok gudang & lapangan.',
     'Buat PO ke vendor beserta harga, lalu kirim ke Finance untuk approval.',
     'Revisi PO jika diminta Finance. Setelah disetujui, kirim PO ke vendor.',
-    'Kelola master barang (min/max stok, harga), vendor, dan lokasi.',
+    'Kelola master barang (min/max stok, harga) dan vendor.',
   ],
   finance: [
     'Validasi & verifikasi PO dari Purchasing: setujui atau minta revisi.',
     'Setelah barang diterima gudang, cek PO + surat jalan + data penerimaan.',
     'Siapkan pembayaran (catat tagihan vendor), lalu lakukan pembayaran.',
   ],
-  admin: ['Kelola akun dan penugasan lokasi di Kelola User.', 'Pantau seluruh dokumen dan stok.', 'Isi saldo awal / penyesuaian stok dari menu Stok.'],
+  admin: ['Buat gudang & lapangan di menu Lokasi.', 'Kelola akun dan penugasan lokasi di Kelola User.', 'Pantau seluruh dokumen dan stok.', 'Isi saldo awal / penyesuaian stok dari menu Stok.'],
 }
 
 export default function Dashboard() {

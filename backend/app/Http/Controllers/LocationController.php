@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
-/** Gudang & lapangan. Daftar terlihat sesuai penugasan; ubah hanya Admin/Purchasing/Finance. */
+/** Gudang & lapangan. Daftar terlihat sesuai penugasan; tambah/ubah/hapus hanya Admin. */
 class LocationController extends Controller
 {
     public function index(Request $request): JsonResponse

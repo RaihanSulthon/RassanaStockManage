@@ -14,12 +14,12 @@ Aplikasi manajemen stok perusahaan catering: stok bahan & barang di gudang dan l
 |---|---|---|
 | User | Pak Haryono (lapangan) | Catat pemakaian harian, lihat saldo stok lapangan, buat UR, catat penerimaan barang dari gudang |
 | Operation1 | Pak Nurdin (gudang) | Evaluasi UR, hitung stok gudang, buat PR (acuan min/max), terima barang & surat jalan vendor (bisa bertahap), kirim barang ke lapangan |
-| Purchasing | Pak Andi | Validasi PR dengan data stok, buat PO + harga, revisi PO, kirim PO ke vendor, kelola master barang (min/max, harga), vendor, lokasi |
+| Purchasing | Pak Andi | Validasi PR dengan data stok, buat PO + harga, revisi PO, kirim PO ke vendor, kelola master barang (min/max, harga) dan vendor |
 | Finance | Pak Fauzan | Approval / minta revisi PO, cek PO + surat jalan + penerimaan gudang, siapkan & lakukan pembayaran |
-| Admin | - | Kelola akun & penugasan lokasi, lihat semua data, penyesuaian / saldo awal stok |
+| Admin | - | Buat gudang & lapangan, kelola akun & penugasan lokasi, lihat semua data, penyesuaian / saldo awal stok |
 
 - **Harga** hanya terlihat oleh Purchasing, Finance, dan Admin (di layar maupun PDF/Excel). Operation dan User hanya melihat jumlah & jenis barang.
-- **Lokasi:** beberapa gudang; tiap gudang melayani satu atau beberapa lapangan. Operation ditugaskan ke gudang, User ke satu lapangan (diatur Admin di Kelola User). Mereka hanya melihat lokasinya sendiri.
+- **Lokasi:** beberapa gudang; tiap gudang melayani satu atau beberapa lapangan. Gudang & lapangan hanya dibuat oleh Admin. Vendor dikelola Admin, Purchasing, dan Finance. Operation ditugaskan ke gudang, User ke satu lapangan (diatur Admin di Kelola User). Mereka hanya melihat lokasinya sendiri.
 - Hak akses ditegakkan di backend (`app/Policies` + middleware `role`); frontend hanya mengatur tampilan.
 
 ## Alur (sesuai activity diagram)

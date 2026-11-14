@@ -59,10 +59,10 @@ function App() {
             <Route path="/payments" element={<Payments />} />
             <Route path="/master/items" element={<Items />} />
             <Route path="/master/vendors" element={<Vendors />} />
-            <Route path="/master/locations" element={<Locations />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={[ADMIN]} />}>
+            <Route path="/master/locations" element={<Locations />} />
             <Route path="/users" element={<Users />} />
           </Route>
         </Route>

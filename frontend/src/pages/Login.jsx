@@ -3,7 +3,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
-  const { user, login } = useAuth()
+  const { user, login, getLastUserId } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [email, setEmail] = useState('')
@@ -11,17 +11,22 @@ export default function Login() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const redirectTo = location.state?.from?.pathname || '/'
+  // Kembali ke halaman sebelumnya hanya untuk akun yang sama (mis. sesi habis lalu login ulang)
+  // atau saat belum ada akun yang login di tab ini (mis. membuka link dari notifikasi).
+  // Akun berbeda selalu mulai dari Dashboard.
+  const from = location.state?.from?.pathname
+  const previousId = getLastUserId()
+  const redirectFor = (u) => (from && (previousId === null || previousId === u.id) ? from : '/')
 
-  if (user) return <Navigate to={redirectTo} replace />
+  if (user) return <Navigate to={redirectFor(user)} replace />
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setSubmitting(true)
     try {
-      await login(email, password)
-      navigate(redirectTo, { replace: true })
+      const u = await login(email, password)
+      navigate(redirectFor(u), { replace: true })
     } catch (err) {
       const status = err.response?.status
       if (status === 429) setError('Terlalu banyak percobaan. Coba lagi beberapa saat.')
