@@ -7,6 +7,7 @@ enum Role: string
     case Admin = 'admin';
     case CoAdmin = 'co_admin';
     case User = 'user';
+    case Operation1 = 'operation1';
 
     public function label(): string
     {
@@ -14,6 +15,7 @@ enum Role: string
             self::Admin => 'Admin',
             self::CoAdmin => 'Co-Admin',
             self::User => 'User',
+            self::Operation1 => 'Operation1',
         };
     }
 
@@ -25,9 +27,9 @@ enum Role: string
     public function manageableRoles(): array
     {
         return match ($this) {
-            self::Admin => [self::Admin, self::CoAdmin, self::User],
-            self::CoAdmin => [self::User],
-            self::User => [],
+            self::Admin => [self::Admin, self::CoAdmin, self::User, self::Operation1],
+            self::CoAdmin => [self::User, self::Operation1],
+            self::User, self::Operation1 => [],
         };
     }
 

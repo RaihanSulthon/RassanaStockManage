@@ -50,7 +50,7 @@ export default function Users() {
   }, [fetchUsers])
 
   const openCreate = () => {
-    setForm({ ...emptyForm, role: roleOptions[roleOptions.length - 1] })
+    setForm({ ...emptyForm, role: 'user' })
     setErrors({})
     setModal({ mode: 'create' })
   }
@@ -89,7 +89,7 @@ export default function Users() {
       await api.delete(`/users/${u.id}`)
       fetchUsers()
     } catch (err) {
-      alert(err.response?.data?.errors?.role?.[0] || err.response?.data?.message || 'Gagal menghapus user.')
+      alert(err.response?.data?.errors?.role?.[0] || err.response?.data?.errors?.user?.[0] || err.response?.data?.message || 'Gagal menghapus user.')
     }
   }
 

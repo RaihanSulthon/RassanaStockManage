@@ -29,6 +29,9 @@ export default function Layout() {
               <NavLink to="/" end className={linkClass}>
                 Dashboard
               </NavLink>
+              <NavLink to="/stock" className={linkClass}>
+                Stock
+              </NavLink>
               {canManageUsers && (
                 <NavLink to="/users" className={linkClass}>
                   Kelola User

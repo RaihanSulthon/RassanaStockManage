@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Role;
 use App\Http\Resources\UserResource;
+use App\Models\StockReport;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -92,6 +93,12 @@ class UserController extends Controller
 
         if ($user->role === Role::Admin) {
             $this->ensureNotLastAdmin();
+        }
+
+        if (StockReport::where('created_by', $user->id)->exists()) {
+            throw ValidationException::withMessages([
+                'user' => ['User ini sudah memiliki laporan stok sehingga tidak bisa dihapus.'],
+            ]);
         }
 
         $user->tokens()->delete();

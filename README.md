@@ -1,6 +1,6 @@
 # Stock Management
 
-Aplikasi manajemen stok dengan login berbasis role (Admin, Co-Admin, User).
+Aplikasi manajemen stok dengan login berbasis role (Admin, Co-Admin, User, Operation1).
 
 | Bagian | Teknologi |
 |---|---|
@@ -10,15 +10,32 @@ Aplikasi manajemen stok dengan login berbasis role (Admin, Co-Admin, User).
 
 ## Hak akses
 
-| Aksi | Admin | Co-Admin | User |
+| Aksi | Admin | Co-Admin | User / Operation1 |
 |---|---|---|---|
 | Dashboard dan profil sendiri | ✅ | ✅ | ✅ |
 | Lihat daftar user | ✅ | ✅ | ❌ |
-| Tambah/ubah/hapus user biasa | ✅ | ✅ | ❌ |
+| Tambah/ubah/hapus user biasa dan Operation1 | ✅ | ✅ | ❌ |
 | Kelola Co-Admin dan Admin, ubah role | ✅ | ❌ | ❌ |
 
 Aturan tambahan: akun tidak bisa menghapus dirinya sendiri, dan Admin terakhir tidak bisa dihapus atau diturunkan rolenya.
 Hak akses ditegakkan di backend (middleware `role` + `UserPolicy`); frontend hanya mengatur tampilan.
+
+## Alur stock management
+
+Stok dibagi dua jenis: **Stok Bahan** dan **Stok Barang**. Satu laporan = stok harian satu jenis yang dicatat satu user (nama, satuan, jumlah, catatan per item). Satu user hanya bisa membuat satu laporan per jenis per tanggal.
+
+| Tahap | Status | Siapa | Yang bisa dilakukan |
+|---|---|---|---|
+| 1 | Draft | User | Mencatat, mengedit, menghapus, lalu **Kirim ke Operation** |
+| 2 | Menunggu Operation | Operation1 | Melihat dan mengedit item, lalu **Kirim ke Co-Admin** |
+| 3 | Menunggu Co-Admin | Co-Admin | Mengedit item, **Generate PDF / Excel**, lalu **Tandai Selesai** |
+| 4 | Selesai | Co-Admin | Laporan terkunci; PDF / Excel tetap bisa di-generate |
+
+- Semua role memakai satu halaman `/stock`; isinya menyesuaikan role (user hanya melihat laporannya sendiri, Operation dan Co-Admin hanya melihat laporan yang sudah sampai ke tahap mereka).
+- Admin bisa melihat dan mengedit di semua tahap (kecuali setelah Selesai).
+- Setiap perubahan isi, pengiriman, dan ekspor tercatat di **Riwayat** laporan (termasuk selisih jumlah yang diubah Operation / Co-Admin).
+- Hak akses per tahap ditegakkan di backend (`StockReportPolicy`). Ekspor memakai `openspout` (Excel) dan `dompdf` (PDF), tanpa butuh ekstensi PHP `gd`.
+- Menjalankan `php artisan migrate` diperlukan setelah `git pull` untuk membuat tabel stok.
 
 ---
 
@@ -124,7 +141,7 @@ Buka http://localhost:5173
 
 ### Akun awal (hasil seeder)
 
-Isi `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_COADMIN_*`, dan `SEED_USER_*` di `backend\.env`, lalu jalankan `php artisan db:seed`. Akun yang variabelnya kosong akan dilewati.
+Isi `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_COADMIN1_*`, `SEED_COADMIN2_*`, `SEED_USER_*`, dan `SEED_OPERATION1_*` di `backend\.env`, lalu jalankan `php artisan db:seed`. Akun yang variabelnya kosong akan dilewati.
 
 > Jangan commit `.env` dan gunakan password yang kuat di production.
 

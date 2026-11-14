@@ -16,8 +16,10 @@ class DatabaseSeeder extends Seeder
     {
         $accounts = [
             ['Admin', 'SEED_ADMIN', Role::Admin],
-            ['Co-Admin', 'SEED_COADMIN', Role::CoAdmin],
+            ['Co-Admin 1', 'SEED_COADMIN1', Role::CoAdmin],
+            ['Co-Admin 2', 'SEED_COADMIN2', Role::CoAdmin],
             ['User Biasa', 'SEED_USER', Role::User],
+            ['Operation1', 'SEED_OPERATION1', Role::Operation1],
         ];
 
         foreach ($accounts as [$name, $prefix, $role]) {
