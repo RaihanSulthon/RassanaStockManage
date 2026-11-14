@@ -19,6 +19,9 @@ class UserResource extends JsonResource
             'role' => $this->role->value,
             'role_label' => $this->role->label(),
             'created_at' => $this->created_at,
+            'locations' => $this->whenLoaded('locations', fn () => $this->locations->map(fn ($l) => [
+                'id' => $l->id, 'name' => $l->name, 'type' => $l->type->value,
+            ])->values()),
             // Memberi tahu FE tombol mana yang boleh ditampilkan (BE tetap memvalidasi ulang).
             'can' => $this->when($actor !== null, fn () => [
                 'update' => $actor->can('update', $this->resource),

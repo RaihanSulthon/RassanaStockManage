@@ -11,15 +11,16 @@ class DatabaseSeeder extends Seeder
     /**
      * Membuat akun awal dari variabel .env (SEED_*_EMAIL / SEED_*_PASSWORD).
      * Akun yang email/password-nya tidak diisi akan dilewati.
+     * Data contoh (lokasi, barang, vendor, saldo awal): php artisan db:seed --class=DemoDataSeeder
      */
     public function run(): void
     {
         $accounts = [
             ['Admin', 'SEED_ADMIN', Role::Admin],
-            ['Co-Admin 1', 'SEED_COADMIN1', Role::CoAdmin],
-            ['Co-Admin 2', 'SEED_COADMIN2', Role::CoAdmin],
-            ['User Biasa', 'SEED_USER', Role::User],
+            ['Purchasing', 'SEED_PURCHASING', Role::Purchasing],
+            ['Finance', 'SEED_FINANCE', Role::Finance],
             ['Operation1', 'SEED_OPERATION1', Role::Operation1],
+            ['User Lapangan', 'SEED_USER', Role::User],
         ];
 
         foreach ($accounts as [$name, $prefix, $role]) {

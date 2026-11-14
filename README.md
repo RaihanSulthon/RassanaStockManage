@@ -1,6 +1,6 @@
 # Stock Management
 
-Aplikasi manajemen stok dengan login berbasis role (Admin, Co-Admin, User, Operation1).
+Aplikasi manajemen stok perusahaan catering: stok bahan & barang di gudang dan lapangan, alur UR → PR → PO → approval → penerimaan → pembayaran.
 
 | Bagian | Teknologi |
 |---|---|
@@ -8,34 +8,34 @@ Aplikasi manajemen stok dengan login berbasis role (Admin, Co-Admin, User, Opera
 | Backend (`backend/`) | PHP 8.3+ + Laravel 13, Laravel Sanctum (token Bearer) |
 | Database | PostgreSQL 18 |
 
-## Hak akses
+## Role & tugas
 
-| Aksi | Admin | Co-Admin | User / Operation1 |
-|---|---|---|---|
-| Dashboard dan profil sendiri | ✅ | ✅ | ✅ |
-| Lihat daftar user | ✅ | ✅ | ❌ |
-| Tambah/ubah/hapus user biasa dan Operation1 | ✅ | ✅ | ❌ |
-| Kelola Co-Admin dan Admin, ubah role | ✅ | ❌ | ❌ |
+| Role | Contoh | Tugas di sistem |
+|---|---|---|
+| User | Pak Haryono (lapangan) | Catat pemakaian harian, lihat saldo stok lapangan, buat UR, catat penerimaan barang dari gudang |
+| Operation1 | Pak Nurdin (gudang) | Evaluasi UR, hitung stok gudang, buat PR (acuan min/max), terima barang & surat jalan vendor (bisa bertahap), kirim barang ke lapangan |
+| Purchasing | Pak Andi | Validasi PR dengan data stok, buat PO + harga, revisi PO, kirim PO ke vendor, kelola master barang (min/max, harga), vendor, lokasi |
+| Finance | Pak Fauzan | Approval / minta revisi PO, cek PO + surat jalan + penerimaan gudang, siapkan & lakukan pembayaran |
+| Admin | - | Kelola akun & penugasan lokasi, lihat semua data, penyesuaian / saldo awal stok |
 
-Aturan tambahan: akun tidak bisa menghapus dirinya sendiri, dan Admin terakhir tidak bisa dihapus atau diturunkan rolenya.
-Hak akses ditegakkan di backend (middleware `role` + `UserPolicy`); frontend hanya mengatur tampilan.
+- **Harga** hanya terlihat oleh Purchasing, Finance, dan Admin (di layar maupun PDF/Excel). Operation dan User hanya melihat jumlah & jenis barang.
+- **Lokasi:** beberapa gudang; tiap gudang melayani satu atau beberapa lapangan. Operation ditugaskan ke gudang, User ke satu lapangan (diatur Admin di Kelola User). Mereka hanya melihat lokasinya sendiri.
+- Hak akses ditegakkan di backend (`app/Policies` + middleware `role`); frontend hanya mengatur tampilan.
 
-## Alur stock management
+## Alur (sesuai activity diagram)
 
-Stok dibagi dua jenis: **Stok Bahan** dan **Stok Barang**. Satu laporan = stok harian satu jenis yang dicatat satu user (nama, satuan, jumlah, catatan per item). Satu user hanya bisa membuat satu laporan per jenis per tanggal.
+1. **User** mencatat pemakaian harian (saldo lapangan berkurang) dan membuat **UR** → kirim ke Operation.
+2. **Operation** mengevaluasi UR, lalu membuat **PR** (1 UR → 1 PR, atau PR estimasi tanpa UR) dengan acuan stok minimal & maksimal → kirim ke Purchasing.
+3. **Purchasing** memvalidasi PR (melihat stok gudang & lapangan), membuat **PO** (1 PR → 1 PO) dengan vendor & harga → kirim ke Finance.
+4. **Finance** menyetujui atau meminta revisi. Jika disetujui, sistem memberi notifikasi ke Purchasing (PO valid) dan Operation (PO sudah dibuat dari PR-nya).
+5. **Purchasing** menandai PO sudah dikirim ke vendor (proses vendor di luar sistem).
+6. **Operation** mencatat penerimaan barang + nomor surat jalan. Bisa bertahap; setiap penerimaan dan selisihnya terhadap PO tercatat di riwayat. Stok gudang bertambah.
+7. **Operation** mengirim barang ke lapangan; **User** mencatat jumlah yang benar-benar diterima (selisih dilaporkan). Stok gudang berkurang, stok lapangan bertambah.
+8. **Finance** mencatat tagihan vendor (dibandingkan dengan total PO dan nilai barang diterima), lalu melakukan pembayaran.
 
-| Tahap | Status | Siapa | Yang bisa dilakukan |
-|---|---|---|---|
-| 1 | Draft | User | Mencatat, mengedit, menghapus, lalu **Kirim ke Operation** |
-| 2 | Menunggu Operation | Operation1 | Melihat dan mengedit item, lalu **Kirim ke Co-Admin** |
-| 3 | Menunggu Co-Admin | Co-Admin | Mengedit item, **Generate PDF / Excel**, lalu **Tandai Selesai** |
-| 4 | Selesai | Co-Admin | Laporan terkunci; PDF / Excel tetap bisa di-generate |
+Dokumen dikerjakan di sistem (bukan file). File hanya dibuat saat klik **Generate PDF / Generate Excel**: UR, PR, PO, riwayat penerimaan, laporan saldo stok (harian/mingguan/bulanan), dan bukti pembayaran.
 
-- Semua role memakai satu halaman `/stock`; isinya menyesuaikan role (user hanya melihat laporannya sendiri, Operation dan Co-Admin hanya melihat laporan yang sudah sampai ke tahap mereka).
-- Admin bisa melihat dan mengedit di semua tahap (kecuali setelah Selesai).
-- Setiap perubahan isi, pengiriman, dan ekspor tercatat di **Riwayat** laporan (termasuk selisih jumlah yang diubah Operation / Co-Admin).
-- Hak akses per tahap ditegakkan di backend (`StockReportPolicy`). Ekspor memakai `openspout` (Excel) dan `dompdf` (PDF), tanpa butuh ekstensi PHP `gd`.
-- Menjalankan `php artisan migrate` diperlukan setelah `git pull` untuk membuat tabel stok.
+Data contoh (2 gudang, 3 lapangan, 10 barang, 3 vendor, saldo awal): `php artisan db:seed --class=DemoDataSeeder`.
 
 ---
 
@@ -141,7 +141,7 @@ Buka http://localhost:5173
 
 ### Akun awal (hasil seeder)
 
-Isi `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_COADMIN1_*`, `SEED_COADMIN2_*`, `SEED_USER_*`, dan `SEED_OPERATION1_*` di `backend\.env`, lalu jalankan `php artisan db:seed`. Akun yang variabelnya kosong akan dilewati.
+Isi `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_PURCHASING_*`, `SEED_FINANCE_*`, `SEED_OPERATION1_*`, dan `SEED_USER_*` di `backend\.env`, lalu jalankan `php artisan db:seed`. Akun yang variabelnya kosong akan dilewati.
 
 > Jangan commit `.env` dan gunakan password yang kuat di production.
 

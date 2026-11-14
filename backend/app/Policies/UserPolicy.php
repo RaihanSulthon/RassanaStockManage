@@ -7,10 +7,10 @@ use App\Models\User;
 
 class UserPolicy
 {
-    /** Melihat daftar user: Admin dan Co-Admin. */
+    /** Melihat daftar user: hanya Admin. */
     public function viewAny(User $actor): bool
     {
-        return $actor->hasRole(Role::Admin, Role::CoAdmin);
+        return $actor->hasRole(Role::Admin);
     }
 
     /** Melihat detail: diri sendiri, atau user yang boleh dikelola. */
@@ -21,7 +21,7 @@ class UserPolicy
 
     public function create(User $actor): bool
     {
-        return $actor->hasRole(Role::Admin, Role::CoAdmin);
+        return $actor->hasRole(Role::Admin);
     }
 
     public function update(User $actor, User $target): bool

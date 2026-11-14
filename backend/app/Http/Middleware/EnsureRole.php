@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Pemakaian di route: ->middleware('role:admin,co_admin')
+ * Pemakaian di route: ->middleware('role:admin,purchasing')
  */
 class EnsureRole
 {

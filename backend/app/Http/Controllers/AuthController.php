@@ -29,13 +29,13 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $user->createToken('auth-token')->plainTextToken,
-            'user' => new UserResource($user),
+            'user' => new UserResource($user->load('locations')),
         ]);
     }
 
     public function me(Request $request): UserResource
     {
-        return new UserResource($request->user());
+        return new UserResource($request->user()->load('locations'));
     }
 
     public function logout(Request $request): JsonResponse

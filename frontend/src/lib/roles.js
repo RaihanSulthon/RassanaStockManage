@@ -1,21 +1,27 @@
 export const ROLES = {
   ADMIN: 'admin',
-  CO_ADMIN: 'co_admin',
-  USER: 'user',
+  PURCHASING: 'purchasing',
+  FINANCE: 'finance',
   OPERATION1: 'operation1',
+  USER: 'user',
 }
 
 export const ROLE_LABELS = {
   admin: 'Admin',
-  co_admin: 'Co-Admin',
-  user: 'User',
+  purchasing: 'Purchasing',
+  finance: 'Finance',
   operation1: 'Operation1',
+  user: 'User',
 }
 
-// Role yang boleh diberikan, tergantung role yang sedang login (mirror aturan di BE)
+// Hanya Admin yang mengelola akun (mirror aturan di BE)
 export const MANAGEABLE_ROLES = {
-  admin: ['admin', 'co_admin', 'user', 'operation1'],
-  co_admin: ['user', 'operation1'],
-  user: [],
+  admin: ['admin', 'purchasing', 'finance', 'operation1', 'user'],
+  purchasing: [],
+  finance: [],
   operation1: [],
+  user: [],
 }
+
+// Role yang melihat semua lokasi dan harga
+export const isPrivileged = (role) => ['admin', 'purchasing', 'finance'].includes(role)

@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { MANAGEABLE_ROLES, ROLE_LABELS } from '../lib/roles'
+import { useLocations } from '../lib/hooks'
 
-const emptyForm = { name: '', email: '', password: '', role: 'user' }
+const emptyForm = { name: '', email: '', password: '', role: 'user', location_ids: [] }
 
 export default function Users() {
   const { user: me } = useAuth()
   const roleOptions = MANAGEABLE_ROLES[me.role]
+  const allLocations = useLocations()
 
   const [users, setUsers] = useState([])
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1 })
@@ -56,7 +58,7 @@ export default function Users() {
   }
 
   const openEdit = (u) => {
-    setForm({ name: u.name, email: u.email, password: '', role: u.role })
+    setForm({ name: u.name, email: u.email, password: '', role: u.role, location_ids: (u.locations || []).map((l) => l.id) })
     setErrors({})
     setModal({ mode: 'edit', id: u.id })
   }
@@ -126,19 +128,20 @@ export default function Users() {
               <th className="py-2 pr-4">Nama</th>
               <th className="py-2 pr-4">Email</th>
               <th className="py-2 pr-4">Role</th>
+              <th className="py-2 pr-4">Lokasi</th>
               <th className="py-2 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4} className="py-6 text-center text-slate-500">
+                <td colSpan={5} className="py-6 text-center text-slate-500">
                   Memuat...
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={4} className="py-6 text-center text-slate-500">
+                <td colSpan={5} className="py-6 text-center text-slate-500">
                   Tidak ada data.
                 </td>
               </tr>
@@ -153,6 +156,9 @@ export default function Users() {
                     <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">
                       {u.role_label}
                     </span>
+                  </td>
+                  <td className="py-2 pr-4 text-slate-600">
+                    {u.locations?.length ? u.locations.map((l) => l.name).join(', ') : ['operation1', 'user'].includes(u.role) ? <span className="text-amber-600">Belum ditugaskan</span> : <span className="text-slate-400">Semua lokasi</span>}
                   </td>
                   <td className="py-2 text-right">
                     {u.can?.update && (
@@ -250,7 +256,7 @@ export default function Users() {
               <label className="mb-1 block text-sm font-medium text-slate-700">Role</label>
               <select
                 value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                onChange={(e) => setForm({ ...form, role: e.target.value, location_ids: [] })}
                 className="w-full rounded border border-slate-300 px-3 py-2"
               >
                 {roleOptions.map((r) => (
@@ -261,6 +267,45 @@ export default function Users() {
               </select>
               {fieldError('role')}
             </div>
+
+            {form.role === 'operation1' && (
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Gudang yang ditangani</label>
+                <div className="space-y-1 rounded border border-slate-300 p-2">
+                  {allLocations.filter((l) => l.type === 'warehouse').map((l) => (
+                    <label key={l.id} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={form.location_ids.includes(l.id)}
+                        onChange={(e) =>
+                          setForm({ ...form, location_ids: e.target.checked ? [...form.location_ids, l.id] : form.location_ids.filter((x) => x !== l.id) })
+                        }
+                      />
+                      {l.name}
+                    </label>
+                  ))}
+                </div>
+                {fieldError('location_ids')}
+              </div>
+            )}
+            {form.role === 'user' && (
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Lapangan</label>
+                <select
+                  value={form.location_ids[0] || ''}
+                  onChange={(e) => setForm({ ...form, location_ids: e.target.value ? [Number(e.target.value)] : [] })}
+                  className="w-full rounded border border-slate-300 px-3 py-2"
+                >
+                  <option value="">— Belum ditugaskan —</option>
+                  {allLocations.filter((l) => l.type === 'field').map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name} {l.parent ? `(Gudang ${l.parent.name})` : ''}
+                    </option>
+                  ))}
+                </select>
+                {fieldError('location_ids')}
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-2">
               <button

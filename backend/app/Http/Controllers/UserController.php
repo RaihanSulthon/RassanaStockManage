@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Enums\Role;
 use App\Http\Resources\UserResource;
-use App\Models\StockReport;
+use App\Enums\LocationType;
+use App\Models\Location;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -22,6 +25,7 @@ class UserController extends Controller
         $search = trim((string) $request->query('search', ''));
 
         $users = User::query()
+            ->with('locations:id,name,type')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'ilike', "%{$search}%")
@@ -44,18 +48,27 @@ class UserController extends Controller
             'password' => ['required', Password::min(8)],
             // Role yang boleh diberikan tergantung role pembuatnya.
             'role' => ['required', Rule::in($request->user()->role->manageableRoleValues())],
+            'location_ids' => ['nullable', 'array'],
+            'location_ids.*' => ['integer'],
         ]);
+        $locationIds = $this->locationIds($data['role'], $data['location_ids'] ?? []);
+        unset($data['location_ids']);
 
-        $user = User::create($data);
+        $user = DB::transaction(function () use ($data, $locationIds) {
+            $user = User::create($data);
+            $user->locations()->sync($locationIds);
 
-        return (new UserResource($user))->response()->setStatusCode(201);
+            return $user;
+        });
+
+        return (new UserResource($user->load('locations')))->response()->setStatusCode(201);
     }
 
     public function show(User $user): UserResource
     {
         Gate::authorize('view', $user);
 
-        return new UserResource($user);
+        return new UserResource($user->load('locations'));
     }
 
     public function update(Request $request, User $user): UserResource
@@ -67,7 +80,15 @@ class UserController extends Controller
             'email' => ['sometimes', 'required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', Password::min(8)],
             'role' => ['sometimes', 'required', Rule::in($request->user()->role->manageableRoleValues())],
+            'location_ids' => ['sometimes', 'nullable', 'array'],
+            'location_ids.*' => ['integer'],
         ]);
+
+        $role = $data['role'] ?? $user->role->value;
+        if (array_key_exists('location_ids', $data) || isset($data['role'])) {
+            $user->locations()->sync($this->locationIds($role, $data['location_ids'] ?? $user->assignedLocationIds()));
+        }
+        unset($data['location_ids']);
 
         if (empty($data['password'])) {
             unset($data['password']);
@@ -84,7 +105,7 @@ class UserController extends Controller
             $user->tokens()->delete();
         }
 
-        return new UserResource($user->refresh());
+        return new UserResource($user->refresh()->load('locations'));
     }
 
     public function destroy(User $user): JsonResponse
@@ -95,16 +116,49 @@ class UserController extends Controller
             $this->ensureNotLastAdmin();
         }
 
-        if (StockReport::where('created_by', $user->id)->exists()) {
+        try {
+            DB::transaction(function () use ($user) {
+                $user->tokens()->delete();
+                $user->delete();
+            });
+        } catch (QueryException) {
+            // Masih direferensikan dokumen (UR/PR/PO/penerimaan/pengiriman/pemakaian/pembayaran).
             throw ValidationException::withMessages([
-                'user' => ['User ini sudah memiliki laporan stok sehingga tidak bisa dihapus.'],
+                'user' => ['User ini sudah tercatat di dokumen stok sehingga tidak bisa dihapus.'],
             ]);
         }
 
-        $user->tokens()->delete();
-        $user->delete();
-
         return response()->json(['message' => 'User berhasil dihapus.']);
+    }
+
+    /**
+     * Penugasan lokasi sesuai role: Operation -> gudang (boleh lebih dari satu), User -> tepat satu lapangan.
+     * Role lain tidak ditugaskan ke lokasi (melihat semua).
+     *
+     * @return array<int, int>
+     */
+    private function locationIds(string $role, array $ids): array
+    {
+        $type = match ($role) {
+            Role::Operation1->value => LocationType::Warehouse,
+            Role::User->value => LocationType::Field,
+            default => null,
+        };
+        if (! $type) {
+            return [];
+        }
+
+        $valid = Location::whereIn('id', $ids)->where('type', $type->value)->pluck('id')->all();
+        if (count($valid) !== count(array_unique($ids))) {
+            throw ValidationException::withMessages(['location_ids' => [
+                $type === LocationType::Warehouse ? 'Operation hanya bisa ditugaskan ke gudang.' : 'User hanya bisa ditugaskan ke lapangan.',
+            ]]);
+        }
+        if ($type === LocationType::Field && count($valid) > 1) {
+            throw ValidationException::withMessages(['location_ids' => ['User hanya bisa ditugaskan ke satu lapangan.']]);
+        }
+
+        return $valid;
     }
 
     private function ensureNotLastAdmin(): void
