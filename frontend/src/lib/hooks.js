@@ -26,10 +26,14 @@ export function useApi(url, params) {
   return { ...state, reload }
 }
 
-/** Master barang aktif (dipakai semua form baris barang). */
-export function useItems() {
-  const { data } = useApi('/items')
-  return data?.data || []
+/**
+ * Barang & bahan aktif milik gudang (dipakai semua form baris barang).
+ * locationId boleh gudang atau lapangan (lapangan memakai barang milik gudang induknya).
+ */
+const NO_ITEMS = []
+export function useItems(locationId) {
+  const { data } = useApi(locationId ? '/items' : null, { location_id: locationId })
+  return (locationId && data?.data) || NO_ITEMS
 }
 
 /** Lokasi yang terlihat oleh akun ini. */

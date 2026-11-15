@@ -5,15 +5,16 @@ import { useAuth } from '../context/AuthContext'
 import api from '../lib/api'
 import { errorMessage, formatDate, formatDateTime, formatQty, todayISO } from '../lib/format'
 import { useApi, useItems } from '../lib/hooks'
+import { toast } from '../lib/toast'
 
 /** Catat Pemakaian Harian (Pak Haryono) + riwayat pemakaian. */
 export default function Usage() {
   const { user } = useAuth()
   const canCreate = user.role === 'user'
   const fields = (user.locations || []).filter((l) => l.type === 'field')
-  const items = useItems()
 
   const [fieldId, setFieldId] = useState(fields[0]?.id || '')
+  const items = useItems(canCreate ? fieldId : null) // barang milik gudang induk lapangan
   const [date, setDate] = useState(todayISO())
   const [note, setNote] = useState('')
   const [rows, setRows] = useState([newLine()])
@@ -36,7 +37,7 @@ export default function Usage() {
       await api.post('/usages', { location_id: fieldId || null, usage_date: date, note: note || null, items: lines.map((r) => ({ item_id: r.item_id, quantity: r.quantity, note: r.note || null })) })
       setRows([newLine()])
       setNote('')
-      setMessage({ kind: 'ok', text: 'Pemakaian tersimpan. Saldo lapangan sudah diperbarui.' })
+      toast('Pemakaian tersimpan. Saldo lapangan sudah diperbarui.')
       balances.reload()
       list.reload()
     } catch (err) {
@@ -51,7 +52,7 @@ export default function Usage() {
     if (!window.confirm(`Batalkan pemakaian ${u.number}? Saldo akan dikembalikan.`)) return
     try {
       await api.post(`/usages/${u.id}/cancel`)
-      setMessage({ kind: 'ok', text: `${u.number} dibatalkan.` })
+      toast(`${u.number} dibatalkan.`)
       balances.reload()
       list.reload()
     } catch (err) {

@@ -81,6 +81,7 @@ class TransferController extends Controller
         if (! $to || $to->type !== LocationType::Field || $to->parent_id !== $from->id) {
             throw ValidationException::withMessages(['to_location_id' => ['Lapangan tujuan harus berada di bawah gudang asal.']]);
         }
+        LineItems::assertWarehouse($items, $from->id);
         if (! empty($data['user_request_id'])) {
             $ur = UserRequest::find($data['user_request_id']);
             if (! $ur || ! $actor->can('process', $ur) || $ur->field_id !== $to->id) {

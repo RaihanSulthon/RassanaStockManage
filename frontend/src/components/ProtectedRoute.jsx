@@ -4,10 +4,11 @@ import { useAuth } from '../context/AuthContext'
 /**
  * <ProtectedRoute />                       -> wajib login
  * <ProtectedRoute roles={['admin']} />     -> wajib login + role tertentu
+ * <ProtectedRoute roles={[...]} redirectTo="/x" /> -> role lain diarahkan ke /x (bukan 403)
  *
  * Ini hanya UX. Keamanan sebenarnya tetap ditegakkan di BE.
  */
-export default function ProtectedRoute({ roles }) {
+export default function ProtectedRoute({ roles, redirectTo }) {
   const { user, loading } = useAuth()
   const location = useLocation()
 
@@ -20,6 +21,7 @@ export default function ProtectedRoute({ roles }) {
   }
 
   if (roles && !roles.includes(user.role)) {
+    if (redirectTo) return <Navigate to={redirectTo} replace />
     return (
       <div className="mx-auto mt-16 max-w-md rounded-lg bg-white p-8 text-center shadow">
         <h1 className="text-2xl font-bold text-red-600">403</h1>

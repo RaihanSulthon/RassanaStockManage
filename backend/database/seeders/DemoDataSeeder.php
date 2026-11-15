@@ -43,15 +43,24 @@ class DemoDataSeeder extends Seeder
                 ['Sendok Plastik', 'barang', 'pack', 20, 100, 9500],
                 ['Sabun Cuci Piring', 'barang', 'botol', 10, 50, 14500],
             ];
+            // Barang milik gudang: Gudang Pusat punya semua, Gudang Site Kalimantan hanya sebagian (harga lebih mahal).
+            $remoteItems = ['Beras', 'Telur Ayam', 'Minyak Goreng', 'Gas LPG 12 kg', 'Kotak Makan'];
             foreach ($items as [$name, $cat, $unit, $min, $max, $price]) {
-                Item::firstOrCreate(['name' => $name], [
+                Item::firstOrCreate(['warehouse_id' => $pusat->id, 'name' => $name], [
                     'category' => $cat, 'unit' => $unit, 'min_stock' => $min, 'max_stock' => $max, 'price' => $price,
                 ]);
+                if (in_array($name, $remoteItems, true)) {
+                    Item::firstOrCreate(['warehouse_id' => $remote->id, 'name' => $name], [
+                        'category' => $cat, 'unit' => $unit, 'min_stock' => $min / 2, 'max_stock' => $max / 2, 'price' => round($price * 1.2),
+                    ]);
+                }
             }
 
-            Vendor::firstOrCreate(['name' => 'CV Sumber Pangan'], ['contact_person' => 'Bu Rina', 'phone' => '0812-0000-0001', 'address' => 'Pasar Induk, Jakarta']);
-            Vendor::firstOrCreate(['name' => 'PT Kemasan Jaya'], ['contact_person' => 'Pak Dedi', 'phone' => '0812-0000-0002', 'address' => 'Tangerang']);
-            Vendor::firstOrCreate(['name' => 'Agen Gas Makmur'], ['contact_person' => 'Pak Joko', 'phone' => '0812-0000-0003']);
+            $pangan = Vendor::firstOrCreate(['name' => 'CV Sumber Pangan'], ['contact_person' => 'Bu Rina', 'phone' => '0812-0000-0001', 'address' => 'Pasar Induk, Jakarta']);
+            $kemasan = Vendor::firstOrCreate(['name' => 'PT Kemasan Jaya'], ['contact_person' => 'Pak Dedi', 'phone' => '0812-0000-0002', 'address' => 'Tangerang']);
+            $gas = Vendor::firstOrCreate(['name' => 'Agen Gas Makmur'], ['contact_person' => 'Pak Joko', 'phone' => '0812-0000-0003']);
+            $pusat->vendors()->syncWithoutDetaching([$pangan->id, $kemasan->id, $gas->id]);
+            $remote->vendors()->syncWithoutDetaching([$pangan->id, $gas->id]);
 
             // Penugasan akun pertama per role (bila belum punya lokasi).
             $op = User::where('role', Role::Operation1->value)->orderBy('id')->first();
@@ -74,7 +83,7 @@ class DemoDataSeeder extends Seeder
                     continue;
                 }
                 foreach ($rows as $name => $qty) {
-                    StockService::move($locationId, Item::where('name', $name)->value('id'), $qty, MovementType::Adjustment,
+                    StockService::move($locationId, Item::where('warehouse_id', $pusat->id)->where('name', $name)->value('id'), $qty, MovementType::Adjustment,
                         now()->subDays(1)->toDateString(), null, $admin, 'Saldo awal (data contoh)');
                 }
             }

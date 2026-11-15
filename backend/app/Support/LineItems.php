@@ -56,6 +56,22 @@ class LineItems
         ], $data['items']);
     }
 
+    /**
+     * Pastikan semua barang di baris dokumen adalah milik gudang yang dimaksud
+     * (lapangan memakai barang milik gudang induknya).
+     *
+     * @param  array<int, array<string, mixed>>  $lines
+     */
+    public static function assertWarehouse(array $lines, ?int $warehouseId): void
+    {
+        $owner = Item::whereIn('id', array_column($lines, 'item_id'))->pluck('warehouse_id', 'id');
+        foreach ($lines as $i => $line) {
+            if ((int) ($owner[$line['item_id']] ?? 0) !== (int) $warehouseId) {
+                throw ValidationException::withMessages(["items.{$i}.item_id" => ['Barang ini tidak terdaftar di gudang tersebut.']]);
+            }
+        }
+    }
+
     /** Daftar perubahan yang mudah dibaca untuk riwayat. @return array<int, string> */
     public static function diff($oldLines, array $newLines, string $qtyField = 'quantity'): array
     {

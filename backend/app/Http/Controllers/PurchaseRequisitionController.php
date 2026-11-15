@@ -76,6 +76,7 @@ class PurchaseRequisitionController extends Controller
             $data['warehouse_id'] = $ur->warehouse_id;
         }
         $warehouse = $this->warehouse($actor, $data['warehouse_id'] ?? null);
+        LineItems::assertWarehouse($data['items'], $warehouse->id);
 
         $pr = DB::transaction(function () use ($data, $warehouse, $actor, $ur) {
             $pr = PurchaseRequisition::create([
@@ -104,6 +105,7 @@ class PurchaseRequisitionController extends Controller
             $pr = PurchaseRequisition::lockForUpdate()->findOrFail($purchaseRequisition->id);
             Gate::authorize('update', $pr);
             $data = $this->validated($request);
+            LineItems::assertWarehouse($data['items'], $pr->warehouse_id);
 
             $changes = LineItems::diff($pr->items()->get(), $data['items']);
             $pr->update([

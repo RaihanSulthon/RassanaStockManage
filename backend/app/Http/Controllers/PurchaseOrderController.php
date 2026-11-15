@@ -81,6 +81,7 @@ class PurchaseOrderController extends Controller
         if ($pr->status !== RequestStatus::Submitted || $pr->purchaseOrder) {
             throw ValidationException::withMessages(['purchase_requisition_id' => ['PR ini sudah dibuatkan PO atau belum dikirim.']]);
         }
+        $this->assertWarehouse($data, $pr->warehouse_id);
 
         $po = DB::transaction(function () use ($data, $pr, $actor) {
             $po = PurchaseOrder::create([
@@ -114,6 +115,7 @@ class PurchaseOrderController extends Controller
             $po = PurchaseOrder::lockForUpdate()->findOrFail($purchaseOrder->id);
             Gate::authorize('update', $po);
             $data = $this->validated($request);
+            $this->assertWarehouse($data, $po->warehouse_id, $po->vendor_id);
 
             $changes = LineItems::diff($po->items()->get(), $data['items']);
             if ((int) $data['vendor_id'] !== $po->vendor_id) {
@@ -417,6 +419,17 @@ class PurchaseOrderController extends Controller
         ]);
 
         return $data;
+    }
+
+    /** Barang harus milik gudang PO dan vendor harus melayani gudang itu (vendor lama di PO tetap boleh). */
+    private function assertWarehouse(array $data, int $warehouseId, ?int $currentVendorId = null): void
+    {
+        LineItems::assertWarehouse($data['items'], $warehouseId);
+
+        $vendorId = (int) $data['vendor_id'];
+        if ($vendorId !== $currentVendorId && ! DB::table('vendor_warehouse')->where(['vendor_id' => $vendorId, 'warehouse_id' => $warehouseId])->exists()) {
+            throw ValidationException::withMessages(['vendor_id' => ['Vendor ini belum terdaftar untuk gudang tujuan PO. Tambahkan dulu di menu Gudang → Vendor.']]);
+        }
     }
 
     private function lines(array $items): array

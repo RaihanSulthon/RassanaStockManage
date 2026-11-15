@@ -41,8 +41,6 @@ export default function PrDetail() {
   const urId = params.get('ur')
   const { user } = useAuth()
   const navigate = useNavigate()
-  const items = useItems()
-  const byId = Object.fromEntries(items.map((i) => [i.id, i]))
   const warehouses = (user.locations || []).filter((l) => l.type === 'warehouse')
 
   const d = useDocument({
@@ -65,6 +63,8 @@ export default function PrDetail() {
 
   const whId = doc?.warehouse?.id || form.warehouse_id || (warehouses.length === 1 ? warehouses[0].id : null)
   const whStock = useApi(whId ? '/stock/balances' : null, { location_id: whId }).data?.data || {}
+  const items = useItems(whId)
+  const byId = Object.fromEntries(items.map((i) => [i.id, i]))
 
   if (d.loading) return <Card>Memuat...</Card>
   if (!isNew && !doc) return <Card><Alert>{d.message?.text}</Alert><Link to="/pr" className="text-blue-600">← Kembali</Link></Card>

@@ -3,6 +3,7 @@ import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { MANAGEABLE_ROLES, ROLE_LABELS } from '../lib/roles'
 import { useLocations } from '../lib/hooks'
+import { toast } from '../lib/toast'
 
 const emptyForm = { name: '', email: '', password: '', role: 'user', location_ids: [] }
 
@@ -75,6 +76,7 @@ export default function Users() {
         if (!payload.password) delete payload.password
         await api.put(`/users/${modal.id}`, payload)
       }
+      toast(modal.mode === 'create' ? 'User ditambahkan.' : 'Perubahan user tersimpan.')
       setModal(null)
       fetchUsers()
     } catch (err) {
@@ -89,6 +91,7 @@ export default function Users() {
     if (!window.confirm(`Hapus user "${u.name}"?`)) return
     try {
       await api.delete(`/users/${u.id}`)
+      toast(`User "${u.name}" dihapus.`)
       fetchUsers()
     } catch (err) {
       alert(err.response?.data?.errors?.role?.[0] || err.response?.data?.errors?.user?.[0] || err.response?.data?.message || 'Gagal menghapus user.')

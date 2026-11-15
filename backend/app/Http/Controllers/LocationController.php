@@ -17,12 +17,18 @@ class LocationController extends Controller
     {
         $actor = $request->user();
         $ids = $actor->visibleLocationIds();
+        $search = trim((string) $request->query('search', ''));
 
         $locations = Location::query()
             ->with('parent:id,name')
-            ->withCount('users')
+            ->withCount(['users', 'items', 'vendors'])
             ->when($ids !== null, fn ($q) => $q->whereIn('id', $ids))
             ->when(! $request->boolean('all'), fn ($q) => $q->where('is_active', true))
+            // Cari di nama/alamat lokasi, juga nama gudang induk (agar "Gudang X" ikut menampilkan lapangannya).
+            ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
+                ->where('name', 'ilike', "%{$search}%")
+                ->orWhere('address', 'ilike', "%{$search}%")
+                ->orWhereHas('parent', fn ($p) => $p->where('name', 'ilike', "%{$search}%"))))
             ->orderBy('type', 'desc') // warehouse dulu
             ->orderBy('name')
             ->get();
@@ -45,6 +51,10 @@ class LocationController extends Controller
         if ($data['type'] !== $location->type->value && $this->isUsed($location)) {
             throw ValidationException::withMessages(['type' => ['Jenis lokasi tidak bisa diubah karena sudah dipakai.']]);
         }
+        // Barang lapangan adalah milik gudang induknya, jadi lapangan yang sudah dipakai tidak bisa pindah gudang.
+        if (($data['parent_id'] ?? null) != $location->parent_id && $this->isUsed($location)) {
+            throw ValidationException::withMessages(['parent_id' => ['Lapangan sudah punya stok/dokumen, tidak bisa dipindah ke gudang lain.']]);
+        }
 
         $location->update($data);
 
@@ -53,9 +63,9 @@ class LocationController extends Controller
 
     public function destroy(Location $location): JsonResponse
     {
-        if ($this->isUsed($location) || $location->children()->exists()) {
+        if ($this->isUsed($location) || $location->children()->exists() || $location->items()->exists()) {
             throw ValidationException::withMessages([
-                'location' => ['Lokasi sudah dipakai (punya stok, dokumen, atau lapangan). Nonaktifkan saja.'],
+                'location' => ['Lokasi sudah dipakai (punya barang, stok, dokumen, atau lapangan). Nonaktifkan saja.'],
             ]);
         }
 
@@ -109,6 +119,8 @@ class LocationController extends Controller
             'address' => $l->address,
             'is_active' => $l->is_active,
             'users_count' => $l->users_count ?? null,
+            'items_count' => $l->items_count ?? null,
+            'vendors_count' => $l->vendors_count ?? null,
             'assigned' => $actor->isAssignedTo($l->id),
         ];
     }

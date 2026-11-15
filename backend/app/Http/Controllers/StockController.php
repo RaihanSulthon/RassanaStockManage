@@ -10,6 +10,7 @@ use App\Models\Item;
 use App\Models\Location;
 use App\Models\StockMovement;
 use App\Support\DocumentExport;
+use App\Support\LineItems;
 use App\Support\StockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -128,6 +129,9 @@ class StockController extends Controller
             'note.required' => 'Isi alasan penyesuaian (mis. saldo awal / hasil hitung fisik).',
             'items.*.item_id.distinct' => 'Barang ini sudah ada di daftar.',
         ]);
+
+        $location = Location::findOrFail($data['location_id']);
+        LineItems::assertWarehouse($data['items'], $location->warehouseId());
 
         $changes = 0;
         DB::transaction(function () use ($data, $request, &$changes) {

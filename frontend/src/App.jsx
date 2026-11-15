@@ -7,9 +7,6 @@ import Payments from './pages/Payments'
 import Stock from './pages/Stock'
 import Usage from './pages/Usage'
 import Users from './pages/Users'
-import Items from './pages/master/Items'
-import Locations from './pages/master/Locations'
-import Vendors from './pages/master/Vendors'
 import PoDetail from './pages/po/PoDetail'
 import PoList from './pages/po/PoList'
 import PrDetail from './pages/pr/PrDetail'
@@ -18,6 +15,8 @@ import TransferDetail from './pages/transfers/TransferDetail'
 import TransferList from './pages/transfers/TransferList'
 import UrDetail from './pages/ur/UrDetail'
 import UrList from './pages/ur/UrList'
+import WarehouseDetail from './pages/warehouses/WarehouseDetail'
+import WarehouseList from './pages/warehouses/WarehouseList'
 import { ROLES } from './lib/roles'
 
 const { ADMIN, PURCHASING, FINANCE, OPERATION1, USER } = ROLES
@@ -31,7 +30,19 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/stock" element={<Stock />} />
+
+          {/* Stok: User melihat lapangannya di sini; role lain lewat menu Gudang. */}
+          <Route element={<ProtectedRoute roles={[USER]} redirectTo="/warehouses" />}>
+            <Route path="/stock" element={<Stock />} />
+          </Route>
+
+          {/* Gudang: stok, barang & harga, vendor, dan lapangan per gudang. */}
+          <Route element={<ProtectedRoute roles={[ADMIN, PURCHASING, FINANCE, OPERATION1]} />}>
+            <Route path="/warehouses" element={<WarehouseList />} />
+            <Route path="/warehouses/:id" element={<WarehouseDetail />} />
+          </Route>
+          {/* Alamat lama sebelum menu digabung ke Gudang */}
+          <Route path="/master/*" element={<Navigate to="/warehouses" replace />} />
 
           <Route element={<ProtectedRoute roles={[USER, OPERATION1, ADMIN]} />}>
             <Route path="/usage" element={<Usage />} />
@@ -57,12 +68,9 @@ function App() {
 
           <Route element={<ProtectedRoute roles={[ADMIN, PURCHASING, FINANCE]} />}>
             <Route path="/payments" element={<Payments />} />
-            <Route path="/master/items" element={<Items />} />
-            <Route path="/master/vendors" element={<Vendors />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={[ADMIN]} />}>
-            <Route path="/master/locations" element={<Locations />} />
             <Route path="/users" element={<Users />} />
           </Route>
         </Route>

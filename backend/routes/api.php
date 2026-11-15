@@ -32,19 +32,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'read']);
 
-    // ---------- Master data: semua boleh melihat ----------
+    // ---------- Master data: semua boleh melihat (dibatasi lokasi yang ditugaskan) ----------
     Route::get('/locations', [LocationController::class, 'index']);
-    Route::get('/items', [ItemController::class, 'index']);
+    Route::get('/items', [ItemController::class, 'index']); // ?location_id= gudang/lapangan -> barang milik gudangnya
 
     // Gudang & lapangan: hanya Admin.
     Route::middleware('role:admin')->group(function () {
         Route::apiResource('locations', LocationController::class)->only(['store', 'update', 'destroy']);
     });
 
-    // Barang & vendor: Admin, Purchasing, Finance (User dan Operation tidak bisa).
+    // Barang & vendor per gudang: Admin, Purchasing, Finance (User dan Operation tidak bisa).
     Route::middleware('role:admin,purchasing,finance')->group(function () {
         Route::apiResource('items', ItemController::class)->only(['store', 'update', 'destroy']);
         Route::apiResource('vendors', VendorController::class)->except(['show']);
+        Route::post('/locations/{location}/vendors', [VendorController::class, 'attach']);
+        Route::delete('/locations/{location}/vendors/{vendor}', [VendorController::class, 'detach']);
     });
 
     // ---------- Stok ----------

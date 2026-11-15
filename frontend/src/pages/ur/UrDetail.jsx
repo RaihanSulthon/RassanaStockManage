@@ -27,13 +27,13 @@ export default function UrDetail() {
   const { id } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const items = useItems()
   const d = useDocument({ id, endpoint: '/user-requests', route: '/ur', emptyForm, toForm, toPayload })
   const { doc, form, setForm, editing, isNew } = d
   const fields = (user.locations || []).filter((l) => l.type === 'field')
 
   // Saldo lapangan & gudang untuk bahan pertimbangan
   const locId = doc?.field?.id || form.field_id || (fields.length === 1 ? fields[0].id : null)
+  const items = useItems(locId) // barang milik gudang induk lapangan
   const fieldStock = useApi(locId ? '/stock/balances' : null, { location_id: locId }).data?.data || {}
   const whId = user.role === 'operation1' ? doc?.warehouse?.id : null
   const whStock = useApi(whId ? '/stock/balances' : null, { location_id: whId }).data?.data || {}

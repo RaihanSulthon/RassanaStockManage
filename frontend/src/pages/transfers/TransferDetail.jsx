@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import api from '../../lib/api'
 import { errorMessage, formatDate, formatDateTime, formatQty, todayISO } from '../../lib/format'
 import { useApi, useItems, useLocations } from '../../lib/hooks'
+import { toast } from '../../lib/toast'
 
 export default function TransferDetail() {
   const { id } = useParams()
@@ -18,7 +19,6 @@ function TransferCreate() {
   const urId = params.get('ur')
   const navigate = useNavigate()
   const { user } = useAuth()
-  const items = useItems()
   const locations = useLocations()
   const warehouses = locations.filter((l) => l.type === 'warehouse' && l.assigned)
   const [form, setForm] = useState({ from: '', to: '', date: todayISO(), note: '' })
@@ -37,6 +37,7 @@ function TransferCreate() {
   const from = form.from || warehouses[0]?.id || ''
   const fields = locations.filter((l) => l.type === 'field' && l.parent_id === Number(from))
   const stock = useApi(from ? '/stock/balances' : null, { location_id: from }).data?.data || {}
+  const items = useItems(from) // barang milik gudang asal
 
   if (user.role !== 'operation1') return <Card><Alert>Hanya Operation yang bisa mengirim barang ke lapangan.</Alert></Card>
 
@@ -128,7 +129,7 @@ function TransferView({ id }) {
     setMessage(null)
     try {
       await api.post(`/transfers/${t.id}/receive`, { note: note || null, items: t.items.map((l) => ({ id: l.id, quantity_received: val(l) === '' ? 0 : val(l) })) })
-      setMessage({ kind: 'ok', text: 'Penerimaan tercatat. Saldo lapangan sudah bertambah.' })
+      toast('Penerimaan tercatat. Saldo lapangan sudah bertambah.')
       reload()
     } catch (err) {
       setMessage({ kind: 'error', text: errorMessage(err) })

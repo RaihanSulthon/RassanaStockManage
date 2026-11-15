@@ -66,6 +66,7 @@ class UserRequestController extends Controller
         $actor = $request->user();
         $data = $this->validated($request);
         $field = $this->field($actor, $data['field_id'] ?? null);
+        LineItems::assertWarehouse($data['items'], $field->parent_id);
 
         $ur = DB::transaction(function () use ($data, $field, $actor) {
             $ur = UserRequest::create([
@@ -93,6 +94,7 @@ class UserRequestController extends Controller
             $ur = UserRequest::lockForUpdate()->findOrFail($userRequest->id);
             Gate::authorize('update', $ur);
             $data = $this->validated($request);
+            LineItems::assertWarehouse($data['items'], $ur->warehouse_id);
 
             $changes = LineItems::diff($ur->items()->get(), $data['items']);
             $ur->update(['needed_date' => $data['needed_date'] ?? null, 'note' => $data['note'] ?? null]);

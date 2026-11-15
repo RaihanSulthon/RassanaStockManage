@@ -99,12 +99,14 @@ class StockService
             ->get()
             ->keyBy('item_id');
 
-        // Gudang menampilkan semua barang aktif (acuan min/max untuk PR); lapangan hanya yang pernah bergerak.
+        // Gudang menampilkan semua barang aktif miliknya yang sudah terdaftar pada akhir periode
+        // (acuan min/max untuk PR); lapangan hanya yang pernah bergerak sampai akhir periode.
         $items = Item::query()
-            ->where(function ($q) use ($sums, $location) {
+            ->where(function ($q) use ($sums, $location, $to) {
                 $q->whereIn('id', $sums->keys());
                 if ($location->type === LocationType::Warehouse) {
-                    $q->orWhere('is_active', true);
+                    $q->orWhere(fn ($q) => $q->where('warehouse_id', $location->id)->where('is_active', true)
+                        ->whereDate('created_at', '<=', $to));
                 }
             })
             ->orderBy('category')->orderBy('name')

@@ -9,6 +9,7 @@ import { useApi, useItems } from '../../lib/hooks'
 import { useDocument } from '../../lib/useDocument'
 import PaymentSection from './PaymentSection'
 import ReceiveModal from './ReceiveModal'
+import { toast } from '../../lib/toast'
 
 const emptyForm = () => ({ vendor_id: '', order_date: todayISO(), expected_date: '', note: '', rows: [newLine()] })
 const toForm = (d) => ({
@@ -36,9 +37,6 @@ export default function PoDetail() {
   const [params] = useSearchParams()
   const prId = params.get('pr')
   const { user } = useAuth()
-  const items = useItems()
-  const byId = Object.fromEntries(items.map((i) => [i.id, i]))
-  const vendors = useApi(user.role === 'operation1' ? null : '/vendors').data?.data || []
   const [receiving, setReceiving] = useState(false)
 
   const d = useDocument({
@@ -49,6 +47,12 @@ export default function PoDetail() {
 
   // PO baru dari PR: barang & jumlah dari PR, harga dari master barang
   const pr = useApi(isNew && prId ? `/purchase-requisitions/${prId}` : null).data?.data
+
+  // Barang & vendor mengikuti gudang tujuan PO
+  const whId = doc?.warehouse?.id || pr?.warehouse?.id || null
+  const items = useItems(whId)
+  const byId = Object.fromEntries(items.map((i) => [i.id, i]))
+  const vendors = useApi(user.role === 'operation1' || !whId ? null : '/vendors', { warehouse_id: whId }).data?.data || []
   useEffect(() => {
     if (!pr || !items.length) return
     const price = Object.fromEntries(items.map((i) => [i.id, i.price]))
@@ -163,6 +167,11 @@ export default function PoDetail() {
                 {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
                 {doc?.vendor && !vendors.some((v) => v.id === doc.vendor.id) && <option value={doc.vendor.id}>{doc.vendor.name}</option>}
               </select>
+              {editable && whId && vendors.length === 0 && (
+                <p className="mt-1 text-xs text-amber-700">
+                  Belum ada vendor untuk gudang ini. Tambahkan di <Link to={`/warehouses/${whId}?tab=vendor`} className="underline">menu Gudang → Vendor</Link>.
+                </p>
+              )}
             </Field>
             <Field label="Tanggal PO" error={d.errors.order_date?.[0]}>
               <input type="date" value={form.order_date} disabled={!editable} onChange={(e) => setForm({ ...form, order_date: e.target.value })} className={inputClass} />
@@ -263,7 +272,8 @@ export default function PoDetail() {
           onDone={(data) => {
             setReceiving(false)
             d.apply(data)
-            d.setMessage({ kind: 'ok', text: 'Penerimaan barang tercatat. Stok gudang sudah bertambah.' })
+            d.setMessage(null)
+            toast('Penerimaan barang tercatat. Stok gudang sudah bertambah.')
           }}
         />
       )}

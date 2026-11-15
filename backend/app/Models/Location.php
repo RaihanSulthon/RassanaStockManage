@@ -37,6 +37,24 @@ class Location extends Model
         return $this->belongsToMany(User::class);
     }
 
+    /** Barang & bahan milik gudang ini. */
+    public function items(): HasMany
+    {
+        return $this->hasMany(Item::class, 'warehouse_id');
+    }
+
+    /** Vendor yang melayani gudang ini. */
+    public function vendors(): BelongsToMany
+    {
+        return $this->belongsToMany(Vendor::class, 'vendor_warehouse', 'warehouse_id', 'vendor_id')->orderBy('name');
+    }
+
+    /** ID gudang untuk lokasi ini (gudang itu sendiri, atau gudang induk lapangan). */
+    public function warehouseId(): ?int
+    {
+        return $this->type === LocationType::Warehouse ? $this->id : $this->parent_id;
+    }
+
     public function isWarehouse(): bool
     {
         return $this->type === LocationType::Warehouse;

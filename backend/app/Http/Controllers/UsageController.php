@@ -66,6 +66,7 @@ class UsageController extends Controller
         if (! $field) {
             throw ValidationException::withMessages(['location_id' => [$fields->isEmpty() ? 'Akun Anda belum ditugaskan ke lapangan. Hubungi Admin.' : 'Pilih lapangan.']]);
         }
+        LineItems::assertWarehouse($items, $field->parent_id);
 
         $usage = DB::transaction(function () use ($data, $items, $actor, $field) {
             $usage = Usage::create([

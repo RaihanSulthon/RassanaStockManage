@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import NotificationBell from './NotificationBell'
+import Toaster from './Toaster'
 
 // Menu per role, mengikuti tugas di activity diagram
 const MENU = {
@@ -13,7 +14,7 @@ const MENU = {
   ],
   operation1: [
     ['/', 'Dashboard'],
-    ['/stock', 'Stok Gudang & Lapangan'],
+    ['/warehouses', 'Gudang & Stok'],
     ['/ur', 'UR Masuk'],
     ['/pr', 'Purchasing Requisition (PR)'],
     ['/po', 'PO & Penerimaan Vendor'],
@@ -21,36 +22,27 @@ const MENU = {
   ],
   purchasing: [
     ['/', 'Dashboard'],
-    ['/stock', 'Stok'],
+    ['/warehouses', 'Gudang'],
     ['/pr', 'PR Masuk'],
     ['/po', 'Purchase Order (PO)'],
     ['/payments', 'Pembayaran'],
-    ['-', 'Master Data'],
-    ['/master/items', 'Barang & Harga'],
-    ['/master/vendors', 'Vendor'],
   ],
   finance: [
     ['/', 'Dashboard'],
-    ['/stock', 'Stok'],
+    ['/warehouses', 'Gudang'],
     ['/po', 'Approval PO'],
     ['/payments', 'Pembayaran'],
-    ['-', 'Master Data'],
-    ['/master/items', 'Barang & Harga'],
-    ['/master/vendors', 'Vendor'],
   ],
   admin: [
     ['/', 'Dashboard'],
-    ['/stock', 'Stok'],
+    ['/warehouses', 'Gudang'],
     ['/usage', 'Pemakaian Harian'],
     ['/ur', 'UR'],
     ['/pr', 'PR'],
     ['/po', 'PO'],
     ['/transfers', 'Pengiriman Lapangan'],
     ['/payments', 'Pembayaran'],
-    ['-', 'Master Data'],
-    ['/master/items', 'Barang & Harga'],
-    ['/master/vendors', 'Vendor'],
-    ['/master/locations', 'Lokasi'],
+    ['-', 'Pengaturan'],
     ['/users', 'Kelola User'],
   ],
 }
@@ -121,6 +113,7 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+      <Toaster />
     </div>
   )
 }

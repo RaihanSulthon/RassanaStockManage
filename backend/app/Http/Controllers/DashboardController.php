@@ -39,13 +39,13 @@ class DashboardController extends Controller
                 $tasks[] = ['label' => 'UR menunggu evaluasi', 'count' => UserRequest::whereIn('warehouse_id', $mine)->where('status', RequestStatus::Submitted->value)->doesntHave('purchaseRequisition')->count(), 'url' => '/ur?status=submitted'];
                 $tasks[] = ['label' => 'PR masih draft', 'count' => PurchaseRequisition::whereIn('warehouse_id', $mine)->where('status', RequestStatus::Draft->value)->count(), 'url' => '/pr?status=draft'];
                 $tasks[] = ['label' => 'PO menunggu barang datang', 'count' => PurchaseOrder::whereIn('warehouse_id', $mine)->whereIn('status', [PoStatus::Sent->value, PoStatus::PartiallyReceived->value])->count(), 'url' => '/po?status=sent'];
-                $tasks[] = ['label' => 'Barang di bawah stok minimal', 'count' => $this->belowMin($mine), 'url' => '/stock'];
+                $tasks[] = ['label' => 'Barang di bawah stok minimal', 'count' => $this->belowMin($mine), 'url' => '/warehouses'];
                 break;
             case Role::Purchasing:
                 $tasks[] = ['label' => 'PR menunggu dibuatkan PO', 'count' => PurchaseRequisition::where('status', RequestStatus::Submitted->value)->count(), 'url' => '/pr?status=submitted'];
                 $tasks[] = ['label' => 'PO perlu revisi', 'count' => PurchaseOrder::where('status', PoStatus::Revision->value)->count(), 'url' => '/po?status=revision'];
                 $tasks[] = ['label' => 'PO disetujui, belum dikirim ke vendor', 'count' => PurchaseOrder::where('status', PoStatus::Approved->value)->count(), 'url' => '/po?status=approved'];
-                $tasks[] = ['label' => 'Barang tanpa harga', 'count' => Item::where('is_active', true)->whereNull('price')->count(), 'url' => '/master/items'];
+                $tasks[] = ['label' => 'Barang tanpa harga', 'count' => Item::where('is_active', true)->whereNull('price')->count(), 'url' => '/warehouses'];
                 break;
             case Role::Finance:
                 $tasks[] = ['label' => 'PO menunggu approval', 'count' => PurchaseOrder::where('status', PoStatus::PendingApproval->value)->count(), 'url' => '/po?status=pending_approval'];
@@ -69,12 +69,11 @@ class DashboardController extends Controller
     {
         $warehouseIds = Location::whereIn('id', $warehouseIds)->where('type', LocationType::Warehouse->value)->pluck('id');
         $count = 0;
-        foreach (Item::where('is_active', true)->whereNotNull('min_stock')->get(['id', 'min_stock']) as $item) {
-            foreach ($warehouseIds as $wid) {
-                $qty = (float) (StockBalance::where('location_id', $wid)->where('item_id', $item->id)->value('quantity') ?? 0);
-                if ($qty < $item->min_stock) {
-                    $count++;
-                }
+        $items = Item::whereIn('warehouse_id', $warehouseIds)->where('is_active', true)->whereNotNull('min_stock')->get(['id', 'warehouse_id', 'min_stock']);
+        $balances = StockBalance::whereIn('location_id', $warehouseIds)->whereIn('item_id', $items->pluck('id'))->pluck('quantity', 'item_id');
+        foreach ($items as $item) {
+            if ((float) ($balances[$item->id] ?? 0) < $item->min_stock) {
+                $count++;
             }
         }
 

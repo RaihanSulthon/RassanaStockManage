@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Alert, Button, Card, ExportButtons, Field, Modal, StatusBadge, Table, inputClass } from '../../components/ui'
 import api from '../../lib/api'
 import { errorMessage, formatDate, formatMoney, todayISO } from '../../lib/format'
+import { toast } from '../../lib/toast'
 
 const METHODS = { transfer: 'Transfer Bank', tunai: 'Tunai', lainnya: 'Lainnya' }
 
@@ -84,7 +85,8 @@ export default function PaymentSection({ po, onChanged }) {
           onClose={() => setModal(null)}
           onDone={(text) => {
             setModal(null)
-            setMessage({ kind: 'ok', text })
+            setMessage(null)
+            toast(text)
             onChanged()
           }}
         />

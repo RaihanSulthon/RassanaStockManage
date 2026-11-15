@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from './api'
 import { errorMessage } from './format'
+import { toast } from './toast'
 
 /**
  * Pola bersama halaman dokumen (UR, PR, PO):
@@ -84,7 +85,7 @@ export function useDocument({ id, endpoint, route, emptyForm, toForm, toPayload,
         const res = await api.put(`${endpoint}/${id}`, payload)
         apply(res.data.data)
         setEditing(false)
-        setMessage({ kind: 'ok', text: 'Perubahan tersimpan.' })
+        toast('Perubahan tersimpan.')
       }
     })
   }
@@ -95,7 +96,7 @@ export function useDocument({ id, endpoint, route, emptyForm, toForm, toPayload,
     run(label, async () => {
       const res = await api.post(`${endpoint}/${id}/${path}`, body || {})
       apply(res.data.data)
-      if (ok) setMessage({ kind: 'ok', text: ok })
+      if (ok) toast(ok)
     })
   }
 
