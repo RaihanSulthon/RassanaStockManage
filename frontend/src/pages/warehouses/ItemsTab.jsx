@@ -100,7 +100,7 @@ export default function ItemsTab({ warehouse, onChanged }) {
         <div className="py-8 text-center text-slate-500">
           Gudang ini belum punya barang atau bahan.{' '}
           <button className="text-blue-600 hover:underline" onClick={() => open(null)}>Tambah yang pertama</button>.
-          <p className="mt-1 text-xs text-slate-400">Setelah ditambahkan, isi stok awalnya lewat tab Stok → Penyesuaian / Saldo Awal (Admin).</p>
+          <p className="mt-1 text-xs text-slate-400">Setelah ditambahkan, isi stok awalnya lewat tab Stok → Ubah Stok → Tambah Stok (alasan: Saldo awal).</p>
         </div>
       ) : (
         <Table

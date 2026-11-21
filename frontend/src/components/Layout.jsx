@@ -7,14 +7,15 @@ import Toaster from './Toaster'
 const MENU = {
   user: [
     ['/', 'Dashboard'],
-    ['/stock', 'Saldo Stok Lapangan'],
+    ['/fields', 'Stok Lapangan'],
     ['/usage', 'Pemakaian Harian'],
     ['/ur', 'User Request (UR)'],
     ['/transfers', 'Penerimaan dari Gudang'],
   ],
   operation1: [
     ['/', 'Dashboard'],
-    ['/warehouses', 'Gudang & Stok'],
+    ['/fields', 'Stok Lapangan'],
+    ['/warehouses', 'Gudang'],
     ['/ur', 'UR Masuk'],
     ['/pr', 'Purchasing Requisition (PR)'],
     ['/po', 'PO & Penerimaan Vendor'],

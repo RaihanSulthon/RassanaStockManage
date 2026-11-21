@@ -1,11 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import LineItemsEditor, { newLine } from './LineItemsEditor'
-import { Alert, Button, Card, ExportButtons, Field, Modal, Pager, Table, inputClass } from './ui'
-import { useAuth } from '../context/AuthContext'
-import api from '../lib/api'
-import { errorMessage, formatDate, formatDateTime, formatQty, todayISO } from '../lib/format'
-import { useApi, useItems } from '../lib/hooks'
+import StockChangeModal from './StockChangeModal'
+import { Alert, Button, Card, ExportButtons, Field, Pager, Table, inputClass } from './ui'
+import { formatDate, formatDateTime, formatQty, todayISO } from '../lib/format'
+import { useApi } from '../lib/hooks'
 import { toast } from '../lib/toast'
 
 const STATUS = {
@@ -17,12 +15,10 @@ const STATUS = {
 const REF_ROUTE = { usage: '/usage', transfer: '/transfers', goods_receipt: null, user_request: '/ur' }
 
 /**
- * Saldo stok harian / mingguan / bulanan per lokasi, mutasi, dan penyesuaian (Admin).
- * locations: lokasi yang bisa dipilih (mis. satu gudang + lapangan di bawahnya).
+ * Saldo stok harian / mingguan / bulanan untuk SATU lokasi (gudang atau lapangan), mutasi, dan ubah stok manual.
+ * canAdjust: tampilkan tombol "Ubah Stok" (aturan role ditentukan halaman pemanggil, dicek ulang di BE).
  */
-export default function StockPanel({ locations }) {
-  const { user } = useAuth()
-  const [locationId, setLocationId] = useState('')
+export default function StockPanel({ location, canAdjust = false }) {
   const [period, setPeriod] = useState('harian')
   const [date, setDate] = useState(todayISO())
   const [range, setRange] = useState({ from: todayISO(), to: todayISO() })
@@ -32,8 +28,7 @@ export default function StockPanel({ locations }) {
   const [adjusting, setAdjusting] = useState(false)
   const [message, setMessage] = useState(null)
 
-  const loc = (locations.some((l) => l.id === Number(locationId)) && locationId) || locations[0]?.id || ''
-  const location = locations.find((l) => l.id === Number(loc))
+  const loc = location?.id || ''
   const params = { location_id: loc, period, date, ...(period === 'custom' ? range : {}) }
   const report = useApi(loc ? '/stock/report' : null, params)
   const movements = useApi(loc && tab === 'mutasi' ? '/stock/movements' : null, { ...params, page })
@@ -47,24 +42,10 @@ export default function StockPanel({ locations }) {
         {loc && (
           <div className="mb-4 flex flex-wrap justify-end gap-2">
             <ExportButtons url={`/stock/report/export?${qs}`} filename={`saldo-stok-${location?.name || loc}-${report.data?.from || date}`} onError={(t) => setMessage({ kind: 'error', text: t })} />
-            {user.role === 'admin' && <Button size="sm" variant="warning" onClick={() => setAdjusting(true)}>Penyesuaian / Saldo Awal</Button>}
+            {canAdjust && location?.is_active !== false && <Button size="sm" variant="warning" onClick={() => setAdjusting(true)}>Ubah Stok</Button>}
           </div>
         )}
         <div className="flex flex-wrap items-end gap-3">
-          <Field label="Lokasi">
-            <select value={loc} onChange={(e) => (setLocationId(e.target.value), setPage(1))} className={inputClass}>
-              {locations.length === 0 && <option value="">Belum ada lokasi</option>}
-              {['warehouse', 'field'].map((t) =>
-                locations.some((l) => l.type === t) ? (
-                  <optgroup key={t} label={t === 'warehouse' ? 'Gudang' : 'Lapangan'}>
-                    {locations.filter((l) => l.type === t).map((l) => (
-                      <option key={l.id} value={l.id}>{l.name}{l.parent && t === 'field' && locations.every((x) => x.type === 'field') ? ` (${l.parent.name})` : ''}</option>
-                    ))}
-                  </optgroup>
-                ) : null,
-              )}
-            </select>
-          </Field>
           <Field label="Periode">
             <div className="flex rounded border border-slate-300 text-sm">
               {[['harian', 'Harian'], ['mingguan', 'Mingguan'], ['bulanan', 'Bulanan'], ['custom', 'Rentang']].map(([v, l]) => (
@@ -90,7 +71,7 @@ export default function StockPanel({ locations }) {
         </div>
         {report.data && (
           <p className="mt-3 text-sm text-slate-500">
-            {location?.type === 'warehouse' ? 'Gudang' : 'Lapangan'} <b>{report.data.location.name}</b>
+            {isWarehouse ? 'Gudang' : 'Lapangan'} <b>{report.data.location.name}</b>
             {report.data.location.parent && ` · di bawah Gudang ${report.data.location.parent.name}`} · {formatDate(report.data.from)}
             {report.data.from !== report.data.to && ` s/d ${formatDate(report.data.to)}`}
           </p>
@@ -156,93 +137,18 @@ export default function StockPanel({ locations }) {
       </Card>
 
       {adjusting && (
-        <AdjustModal
+        <StockChangeModal
           location={location}
-          balances={Object.fromEntries((report.data?.data || []).map((r) => [r.item_id, r.closing]))}
           onClose={() => setAdjusting(false)}
           onDone={(text) => {
             setAdjusting(false)
             setMessage(null)
             toast(text)
             report.reload()
+            movements.reload()
           }}
         />
       )}
     </div>
-  )
-}
-
-/** Admin: isi saldo aktual (hasil hitung fisik / saldo awal). Sistem mencatat selisihnya sebagai mutasi penyesuaian. */
-function AdjustModal({ location, onClose, onDone }) {
-  const items = useItems(location.id)
-  const current = useApi('/stock/balances', { location_id: location.id }).data?.data || {}
-  const [rows, setRows] = useState([newLine()])
-  const [date, setDate] = useState(todayISO())
-  const [note, setNote] = useState('Saldo awal')
-  const [errors, setErrors] = useState({})
-  const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
-
-  const submit = async () => {
-    setBusy(true)
-    setErrors({})
-    setError('')
-    try {
-      const res = await api.post('/stock/adjustments', {
-        location_id: location.id,
-        date,
-        note,
-        items: rows.filter((r) => r.item_id).map((r) => ({ item_id: r.item_id, actual: r.quantity })),
-      })
-      onDone(res.data.message)
-    } catch (err) {
-      if (err.response?.status === 422) setErrors(err.response.data.errors || {})
-      setError(errorMessage(err))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  // Error "items.N.actual" ditampilkan di kolom jumlah
-  const mapped = Object.fromEntries(Object.entries(errors).map(([k, v]) => [k.replace('.actual', '.quantity'), v]))
-
-  return (
-    <Modal title={`Penyesuaian Stok · ${location.name}`} onClose={onClose} wide>
-      <Alert>{error}</Alert>
-      <Alert kind="info">Isi saldo <b>aktual</b> hasil hitung fisik. Sistem mencatat selisih terhadap saldo sistem sebagai mutasi penyesuaian.</Alert>
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <Field label="Tanggal" error={errors.date?.[0]}>
-          <input type="date" max={todayISO()} value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
-        </Field>
-        <Field label="Alasan" error={errors.note?.[0]} className="sm:col-span-2">
-          <input value={note} onChange={(e) => setNote(e.target.value)} className={inputClass} maxLength={255} />
-        </Field>
-      </div>
-      <LineItemsEditor
-        items={items}
-        rows={rows}
-        setRows={setRows}
-        editable
-        errors={mapped}
-        qtyLabel="Saldo aktual"
-        showNote={false}
-        extraColumns={[
-          { label: 'Saldo sistem', className: 'text-right', render: (r) => (r.item_id ? formatQty(current[r.item_id] ?? 0) : '-') },
-          {
-            label: 'Selisih',
-            className: 'text-right',
-            render: (r) => {
-              if (!r.item_id || r.quantity === '') return '-'
-              const diff = Number(r.quantity) - (current[r.item_id] ?? 0)
-              return <span className={diff > 0 ? 'text-green-700' : diff < 0 ? 'text-red-600' : ''}>{diff > 0 ? '+' : ''}{formatQty(diff)}</span>
-            },
-          },
-        ]}
-      />
-      <div className="mt-5 flex justify-end gap-2">
-        <Button variant="secondary" onClick={onClose}>Batal</Button>
-        <Button variant="warning" onClick={submit} disabled={busy}>{busy ? 'Menyimpan...' : 'Simpan Penyesuaian'}</Button>
-      </div>
-    </Modal>
   )
 }

@@ -13,7 +13,11 @@ import ItemsTab from './ItemsTab'
 import LocationFormModal from './LocationFormModal'
 import VendorsTab from './VendorsTab'
 
-/** Satu gudang: stok (gudang + lapangannya), barang & harga, vendor, dan lapangan. */
+/**
+ * Satu gudang: stok gudang ini saja, barang & harga, vendor, dan daftar lapangan.
+ * Stok lapangan dibuka lewat tab Lapangan → halaman detail lapangan.
+ * Ubah stok gudang: Admin/Purchasing/Finance (Operation1 hanya melihat).
+ */
 export default function WarehouseDetail() {
   const { id } = useParams()
   const { user } = useAuth()
@@ -106,10 +110,10 @@ export default function WarehouseDetail() {
         ))}
       </div>
 
-      {tab === 'stok' && <StockPanel key={warehouse.id} locations={[warehouse, ...fields]} />}
+      {tab === 'stok' && <StockPanel key={warehouse.id} location={warehouse} canAdjust={privileged} />}
       {tab === 'barang' && <ItemsTab warehouse={warehouse} onChanged={reload} />}
       {tab === 'vendor' && privileged && <VendorsTab warehouse={warehouse} onChanged={reload} />}
-      {tab === 'lapangan' && <FieldsTab warehouse={warehouse} fields={fields} warehouses={warehouses} canManage={isAdmin} reload={reload} />}
+      {tab === 'lapangan' && <FieldsTab warehouse={warehouse} fields={fields} canManage={isAdmin} reload={reload} />}
 
       {editing && (
         <LocationFormModal

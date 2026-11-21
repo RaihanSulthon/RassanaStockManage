@@ -8,7 +8,8 @@ namespace App\Enums;
  *  - Operation1 (Pak Nurdin)  : evaluasi UR, hitung stok gudang, PR, terima barang vendor, kirim ke lapangan.
  *  - Purchasing (Pak Andi)    : validasi PR, PO + harga, master barang (min/max, harga), vendor.
  *  - Finance (Pak Fauzan)     : approval PO, pembayaran ke vendor.
- *  - Admin                    : kelola user, lihat semua data, penyesuaian stok.
+ *  - Admin                    : kelola user, lihat semua data.
+ *  Ubah stok manual: stok gudang oleh Admin/Purchasing/Finance; stok lapangan juga oleh User/Operation1 yang ditugaskan.
  */
 enum Role: string
 {

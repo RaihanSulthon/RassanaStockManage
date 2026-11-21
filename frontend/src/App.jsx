@@ -2,9 +2,10 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import Dashboard from './pages/Dashboard'
+import FieldDetail from './pages/fields/FieldDetail'
+import FieldList from './pages/fields/FieldList'
 import Login from './pages/Login'
 import Payments from './pages/Payments'
-import Stock from './pages/Stock'
 import Usage from './pages/Usage'
 import Users from './pages/Users'
 import PoDetail from './pages/po/PoDetail'
@@ -32,14 +33,18 @@ function App() {
           <Route path="/" element={<Dashboard />} />
 
           {/* Stok: User melihat lapangannya di sini; role lain lewat menu Gudang. */}
-          <Route element={<ProtectedRoute roles={[USER]} redirectTo="/warehouses" />}>
-            <Route path="/stock" element={<Stock />} />
+          {/* Stok lapangan langsung (tanpa lewat gudang): User & Operation1 */}
+          <Route element={<ProtectedRoute roles={[USER, OPERATION1]} redirectTo="/warehouses" />}>
+            <Route path="/fields" element={<FieldList />} />
+            <Route path="/fields/:fieldId" element={<FieldDetail />} />
           </Route>
+          <Route path="/stock" element={<Navigate to="/fields" replace />} />
 
           {/* Gudang: stok, barang & harga, vendor, dan lapangan per gudang. */}
           <Route element={<ProtectedRoute roles={[ADMIN, PURCHASING, FINANCE, OPERATION1]} />}>
             <Route path="/warehouses" element={<WarehouseList />} />
             <Route path="/warehouses/:id" element={<WarehouseDetail />} />
+            <Route path="/warehouses/:warehouseId/fields/:fieldId" element={<FieldDetail />} />
           </Route>
           {/* Alamat lama sebelum menu digabung ke Gudang */}
           <Route path="/master/*" element={<Navigate to="/warehouses" replace />} />
