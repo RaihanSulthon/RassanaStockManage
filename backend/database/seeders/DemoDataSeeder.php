@@ -63,9 +63,13 @@ class DemoDataSeeder extends Seeder
             $remote->vendors()->syncWithoutDetaching([$pangan->id, $gas->id]);
 
             // Penugasan akun pertama per role (bila belum punya lokasi).
+            $logistic = User::where('role', Role::Logistic->value)->orderBy('id')->first();
+            if ($logistic && ! $logistic->locations()->exists()) {
+                $logistic->locations()->sync([$pusat->id]);
+            }
             $op = User::where('role', Role::Operation1->value)->orderBy('id')->first();
             if ($op && ! $op->locations()->exists()) {
-                $op->locations()->sync([$pusat->id]);
+                $op->locations()->sync([$lapA->id]);
             }
             $usr = User::where('role', Role::User->value)->orderBy('id')->first();
             if ($usr && ! $usr->locations()->exists()) {

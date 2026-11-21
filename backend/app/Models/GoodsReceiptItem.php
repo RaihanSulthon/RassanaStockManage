@@ -13,7 +13,7 @@ class GoodsReceiptItem extends Model
 
     protected function casts(): array
     {
-        return ['quantity_received' => 'float'];
+        return ['quantity_received' => 'float', 'stock_before' => 'float', 'stock_after' => 'float'];
     }
 
     public function item(): BelongsTo

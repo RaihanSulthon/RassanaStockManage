@@ -26,7 +26,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * PO: Pak Andi membuat dari PR + menentukan harga -> Pak Fauzan approve/tolak (revisi)
- * -> Pak Andi kirim ke vendor -> Pak Nurdin mencatat penerimaan (bisa bertahap).
+ * -> Purchasing kirim ke vendor -> Logistic mencatat penerimaan di gudang (bisa bertahap).
  */
 class PurchaseOrderController extends Controller
 {
@@ -44,7 +44,7 @@ class PurchaseOrderController extends Controller
             ->withCount('items');
 
         match (true) {
-            $actor->hasRole(Role::Operation1) => $query->whereIn('warehouse_id', $actor->assignedLocationIds())
+            $actor->hasRole(Role::Logistic) => $query->whereIn('warehouse_id', $actor->assignedLocationIds())
                 ->whereNotIn('status', [PoStatus::Draft->value, PoStatus::PendingApproval->value, PoStatus::Revision->value]),
             $actor->hasRole(Role::Purchasing) => $query,
             default => $query->where('status', '!=', PoStatus::Draft->value),
@@ -170,10 +170,10 @@ class PurchaseOrderController extends Controller
             $po->update(['status' => PoStatus::Approved, 'approved_by' => $actor->id, 'approved_at' => now(), 'revision_note' => null]);
             $po->addLog($actor, 'approved');
 
-            // Sesuai diagram: notifikasi ke Pak Andi (PO valid) dan Pak Nurdin (PO sudah dibuat dari PR-nya).
+            // Notifikasi ke Purchasing (PO valid) dan Logistic gudang (PO sudah dibuat dari PR-nya).
             Notifier::users([$po->creator], "PO disetujui: {$po->number}",
                 'PO sudah valid dan dapat dikirim ke vendor.', "/po/{$po->id}");
-            Notifier::role(Role::Operation1, "PO dibuat dari {$po->purchaseRequisition->number}",
+            Notifier::role(Role::Logistic, "PO dibuat dari {$po->purchaseRequisition->number}",
                 "PO {$po->number} ke {$po->vendor->name} sudah disetujui. Barang akan dikirim vendor ke gudang.",
                 "/po/{$po->id}", $po->warehouse_id);
         });
@@ -211,7 +211,7 @@ class PurchaseOrderController extends Controller
             $po->update(['status' => PoStatus::Sent, 'sent_at' => now()]);
             $po->addLog($actor, 'sent_to_vendor');
 
-            Notifier::role(Role::Operation1, "PO {$po->number} dikirim ke vendor",
+            Notifier::role(Role::Logistic, "PO {$po->number} dikirim ke vendor",
                 "Siapkan penerimaan barang dari {$po->vendor->name} di gudang {$po->warehouse->name}.",
                 "/po/{$po->id}", $po->warehouse_id);
         });
@@ -219,7 +219,7 @@ class PurchaseOrderController extends Controller
         return response()->json(['data' => $this->present($this->load($purchaseOrder->refresh()), $actor)]);
     }
 
-    /** Pak Nurdin mencatat barang + surat jalan dari vendor (bisa bertahap). */
+    /** Logistic mencatat barang + surat jalan dari vendor (bisa bertahap), termasuk stok gudang sebelum/sesudah. */
     public function receive(Request $request, PurchaseOrder $purchaseOrder): JsonResponse
     {
         $actor = $request->user();
@@ -264,16 +264,18 @@ class PurchaseOrderController extends Controller
                 }
                 $qty = round((float) $line['quantity_received'], 3);
 
+                $poItem->update(['quantity_received' => round($poItem->quantity_received + $qty, 3)]);
+
+                $after = StockService::move($po->warehouse_id, $poItem->item_id, $qty, MovementType::VendorReceipt,
+                    $data['received_date'], $receipt, $actor, "Surat jalan {$receipt->delivery_note_number} ({$po->number})");
                 $receipt->items()->create([
                     'purchase_order_item_id' => $poItem->id,
                     'item_id' => $poItem->item_id,
                     'quantity_received' => $qty,
+                    'stock_before' => round($after - $qty, 3),
+                    'stock_after' => $after,
                     'note' => $line['note'] ?? null,
                 ]);
-                $poItem->update(['quantity_received' => round($poItem->quantity_received + $qty, 3)]);
-
-                StockService::move($po->warehouse_id, $poItem->item_id, $qty, MovementType::VendorReceipt,
-                    $data['received_date'], $receipt, $actor, "Surat jalan {$receipt->delivery_note_number} ({$po->number})");
 
                 $remaining = round($poItem->quantity - $poItem->quantity_received, 3);
                 if (abs($remaining) > 0.0005) {
@@ -519,6 +521,8 @@ class PurchaseOrderController extends Controller
             'items' => $r->items->map(fn ($l) => $this->line($l, [
                 'purchase_order_item_id' => $l->purchase_order_item_id,
                 'quantity_received' => $l->quantity_received,
+                'stock_before' => $l->stock_before,
+                'stock_after' => $l->stock_after,
             ]))->values(),
         ])->values();
         $data['logs'] = $this->logs($po);

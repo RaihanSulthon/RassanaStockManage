@@ -13,7 +13,7 @@ enum RequestStatus: string
     {
         return match ($this) {
             self::Draft => 'Draft',
-            self::Submitted => $doc === 'ur' ? 'Menunggu Operation' : 'Menunggu Purchasing',
+            self::Submitted => $doc === 'ur' ? 'Menunggu Logistic' : 'Menunggu Purchasing',
             self::Processed => $doc === 'ur' ? 'Sudah dibuat PR' : 'Sudah dibuat PO',
         };
     }

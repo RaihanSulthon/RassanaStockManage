@@ -209,6 +209,8 @@ const LOG_TEXT = {
   closed: 'menutup PO',
   sent: 'mengirim barang',
   transfer_sent: 'mengirim barang ke lapangan',
+  shortage_resolved: 'menindaklanjuti selisih kiriman',
+  received_late: 'mencatat penerimaan barang susulan',
   cancelled: 'membatalkan',
   prepared: 'menyiapkan pembayaran',
   payment_prepared: 'menyiapkan pembayaran',

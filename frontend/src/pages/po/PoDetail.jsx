@@ -52,7 +52,7 @@ export default function PoDetail() {
   const whId = doc?.warehouse?.id || pr?.warehouse?.id || null
   const items = useItems(whId)
   const byId = Object.fromEntries(items.map((i) => [i.id, i]))
-  const vendors = useApi(user.role === 'operation1' || !whId ? null : '/vendors', { warehouse_id: whId }).data?.data || []
+  const vendors = useApi(user.role === 'logistic' || !whId ? null : '/vendors', { warehouse_id: whId }).data?.data || []
   useEffect(() => {
     if (!pr || !items.length) return
     const price = Object.fromEntries(items.map((i) => [i.id, i.price]))
@@ -250,7 +250,9 @@ export default function PoDetail() {
                   columns={[
                     { label: 'Barang', render: (l) => l.name },
                     { label: 'Satuan', render: (l) => l.unit },
-                    { label: 'Jumlah diterima', className: 'text-right', render: (l) => formatQty(l.quantity_received) },
+                    { label: 'Stok gudang sebelum', className: 'text-right text-slate-500', render: (l) => formatQty(l.stock_before) },
+                    { label: 'Jumlah diterima', className: 'text-right text-green-700', render: (l) => `+${formatQty(l.quantity_received)}` },
+                    { label: 'Stok gudang sesudah', className: 'text-right font-semibold', render: (l) => formatQty(l.stock_after) },
                     { label: 'Catatan', render: (l) => l.note || '-' },
                   ]}
                   rows={r.items}

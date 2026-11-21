@@ -161,7 +161,7 @@ export default function Users() {
                     </span>
                   </td>
                   <td className="py-2 pr-4 text-slate-600">
-                    {u.locations?.length ? u.locations.map((l) => l.name).join(', ') : ['operation1', 'user'].includes(u.role) ? <span className="text-amber-600">Belum ditugaskan</span> : <span className="text-slate-400">Semua lokasi</span>}
+                    {u.locations?.length ? u.locations.map((l) => l.name).join(', ') : ['logistic', 'operation1', 'user'].includes(u.role) ? <span className="text-amber-600">Belum ditugaskan</span> : <span className="text-slate-400">Semua lokasi</span>}
                   </td>
                   <td className="py-2 text-right">
                     {u.can?.update && (
@@ -271,23 +271,33 @@ export default function Users() {
               {fieldError('role')}
             </div>
 
-            {form.role === 'operation1' && (
+            {['logistic', 'operation1'].includes(form.role) && (
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Gudang yang ditangani</label>
-                <div className="space-y-1 rounded border border-slate-300 p-2">
-                  {allLocations.filter((l) => l.type === 'warehouse').map((l) => (
-                    <label key={l.id} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={form.location_ids.includes(l.id)}
-                        onChange={(e) =>
-                          setForm({ ...form, location_ids: e.target.checked ? [...form.location_ids, l.id] : form.location_ids.filter((x) => x !== l.id) })
-                        }
-                      />
-                      {l.name}
-                    </label>
-                  ))}
+                <label className="mb-1 block text-sm font-medium text-slate-700">
+                  {form.role === 'logistic' ? 'Gudang yang dikelola' : 'Lapangan yang ditangani'}
+                </label>
+                <div className="max-h-56 space-y-1 overflow-y-auto rounded border border-slate-300 p-2">
+                  {allLocations
+                    .filter((l) => l.type === (form.role === 'logistic' ? 'warehouse' : 'field'))
+                    .map((l) => (
+                      <label key={l.id} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={form.location_ids.includes(l.id)}
+                          onChange={(e) =>
+                            setForm({ ...form, location_ids: e.target.checked ? [...form.location_ids, l.id] : form.location_ids.filter((x) => x !== l.id) })
+                          }
+                        />
+                        {l.name}
+                        {l.parent && <span className="text-xs text-slate-400">(Gudang {l.parent.name})</span>}
+                      </label>
+                    ))}
                 </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  {form.role === 'logistic'
+                    ? 'Logistic mengelola stok, barang, penerimaan vendor, dan pengiriman ke lapangan untuk gudang ini.'
+                    : 'Operation hanya melihat lapangan ini; tidak bisa melihat stok gudang.'}
+                </p>
                 {fieldError('location_ids')}
               </div>
             )}

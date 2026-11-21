@@ -10,7 +10,7 @@ import { toast } from '../lib/toast'
 /** Catat Pemakaian Harian (Pak Haryono) + riwayat pemakaian. */
 export default function Usage() {
   const { user } = useAuth()
-  const canCreate = user.role === 'user'
+  const canCreate = ['user', 'operation1'].includes(user.role)
   const fields = (user.locations || []).filter((l) => l.type === 'field')
 
   const [fieldId, setFieldId] = useState(fields[0]?.id || '')

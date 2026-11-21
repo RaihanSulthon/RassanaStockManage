@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
-/** Catat Pemakaian Harian (Pak Haryono). Mengurangi saldo lapangan. */
+/** Catat Pemakaian Harian (Operation1 / User di lapangannya). Mengurangi saldo lapangan. */
 class UsageController extends Controller
 {
     use PresentsDocuments;

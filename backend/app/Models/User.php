@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\LocationType;
 use App\Enums\Role;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -39,7 +40,7 @@ class User extends Authenticatable
         return in_array($this->role, $roles, true);
     }
 
-    /** Lokasi yang ditugaskan: gudang (Operation) atau lapangan (User). */
+    /** Lokasi yang ditugaskan: gudang (Logistic) atau lapangan (Operation1 / User). */
     public function locations(): BelongsToMany
     {
         return $this->belongsToMany(Location::class)->orderBy('name');
@@ -56,7 +57,8 @@ class User extends Authenticatable
 
     /**
      * ID lokasi yang boleh dilihat user ini; null berarti semua lokasi.
-     * Operation melihat gudangnya + semua lapangan di bawahnya. User hanya lapangannya.
+     * Logistic melihat gudangnya + semua lapangan di bawahnya.
+     * Operation1 / User hanya lapangan yang ditugaskan (tidak pernah gudang).
      *
      * @return array<int, int>|null
      */
@@ -67,13 +69,13 @@ class User extends Authenticatable
         }
 
         $own = $this->assignedLocationIds();
-        if ($this->role === Role::Operation1) {
+        if ($this->role === Role::Logistic) {
             $children = Location::whereIn('parent_id', $own)->pluck('id')->map(fn ($id) => (int) $id)->all();
 
             return array_values(array_unique([...$own, ...$children]));
         }
 
-        return $own;
+        return Location::whereIn('id', $own)->where('type', LocationType::Field->value)->pluck('id')->map(fn ($id) => (int) $id)->all();
     }
 
     public function canSeeLocation(?int $locationId): bool
@@ -83,7 +85,7 @@ class User extends Authenticatable
         return $ids === null || in_array((int) $locationId, $ids, true);
     }
 
-    /** Lokasi yang ditugaskan langsung (untuk aksi: Operation di gudangnya, User di lapangannya). */
+    /** Lokasi yang ditugaskan langsung (untuk aksi: Logistic di gudangnya, Operation1/User di lapangannya). */
     public function isAssignedTo(?int $locationId): bool
     {
         return in_array((int) $locationId, $this->assignedLocationIds(), true);

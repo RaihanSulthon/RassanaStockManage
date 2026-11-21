@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Alert, Button, Field, Modal, inputClass } from '../../components/ui'
 import api from '../../lib/api'
 import { errorMessage, formatQty, todayISO } from '../../lib/format'
+import { useApi } from '../../lib/hooks'
 
-/** Pak Nurdin: terima barang & surat jalan dari vendor (bisa bertahap). Jumlah diisi sesuai barang aktual. */
+/** Logistic: terima barang & surat jalan dari vendor (bisa bertahap). Jumlah diisi sesuai barang aktual; stok gudang sebelum/sesudah ikut ditampilkan. */
 export default function ReceiveModal({ po, onClose, onDone }) {
   const [form, setForm] = useState({
     delivery_note_number: '',
@@ -15,6 +16,7 @@ export default function ReceiveModal({ po, onClose, onDone }) {
   const [errors, setErrors] = useState({})
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const stock = useApi(po.warehouse?.id ? '/stock/balances' : null, { location_id: po.warehouse?.id }).data?.data || {}
 
   const setLine = (id, patch) => setForm((f) => ({ ...f, lines: { ...f.lines, [id]: { ...f.lines[id], ...patch } } }))
 
@@ -60,25 +62,30 @@ export default function ReceiveModal({ po, onClose, onDone }) {
               <th className="py-2 pr-2 text-right">Dipesan</th>
               <th className="py-2 pr-2 text-right">Sudah diterima</th>
               <th className="py-2 pr-2 text-right">Sisa</th>
+              <th className="py-2 pr-2 text-right">Stok gudang sekarang</th>
               <th className="w-32 py-2 pr-2">Diterima sekarang</th>
+              <th className="py-2 pr-2 text-right">Stok sesudah</th>
               <th className="py-2 pr-2">Catatan</th>
             </tr>
           </thead>
           <tbody>
             {po.items.map((i, idx) => {
               const after = Number(i.remaining) - Number(form.lines[i.id].qty || 0)
+              const before = Number(stock[i.item_id] ?? 0)
               return (
                 <tr key={i.id} className="border-b align-top last:border-0">
                   <td className="py-2 pr-2 font-medium">{i.name} <span className="text-slate-400">({i.unit})</span></td>
                   <td className="py-2 pr-2 text-right">{formatQty(i.quantity)}</td>
                   <td className="py-2 pr-2 text-right">{formatQty(i.quantity_received)}</td>
                   <td className="py-2 pr-2 text-right">{formatQty(Math.max(0, i.remaining))}</td>
+                  <td className="py-2 pr-2 text-right text-slate-500">{formatQty(before)}</td>
                   <td className="py-2 pr-2">
                     <input type="number" min="0" step="any" value={form.lines[i.id].qty} onChange={(e) => setLine(i.id, { qty: e.target.value })} className="w-full rounded border border-slate-300 px-2 py-1.5" />
                     {after > 0.0005 && <p className="mt-1 text-xs text-amber-600">Masih kurang {formatQty(after)}</p>}
                     {after < -0.0005 && <p className="mt-1 text-xs text-blue-600">Lebih {formatQty(-after)}</p>}
                     {errors[`items.${idx}.quantity_received`] && <p className="mt-1 text-xs text-red-600">{errors[`items.${idx}.quantity_received`][0]}</p>}
                   </td>
+                  <td className="py-2 pr-2 text-right font-semibold">{formatQty(before + Number(form.lines[i.id].qty || 0))}</td>
                   <td className="py-2 pr-2">
                     <input value={form.lines[i.id].note} onChange={(e) => setLine(i.id, { note: e.target.value })} className="w-full rounded border border-slate-300 px-2 py-1.5" maxLength={255} />
                   </td>

@@ -18,12 +18,12 @@ const ALL = [
 export default function PoList() {
   const { user } = useAuth()
   const prices = ['admin', 'purchasing', 'finance'].includes(user.role)
-  const statuses = user.role === 'operation1' ? ALL.slice(3) : user.role === 'purchasing' ? ALL : ALL.slice(1)
+  const statuses = user.role === 'logistic' ? ALL.slice(3) : user.role === 'purchasing' ? ALL : ALL.slice(1)
 
   const subtitle = {
     purchasing: 'Buat PO dari PR, tentukan vendor & harga, kirim ke Finance untuk approval, lalu kirim ke vendor.',
     finance: 'Validasi & verifikasi PO dari Purchasing, lalu proses pembayaran setelah barang diterima gudang.',
-    operation1: 'PO yang sudah disetujui. Cek barang datang sesuai surat jalan & PO, lalu catat penerimaannya.',
+    logistic: 'PO yang sudah disetujui. Cek barang datang sesuai surat jalan & PO, lalu catat penerimaannya.',
   }[user.role]
 
   return (

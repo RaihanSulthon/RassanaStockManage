@@ -7,7 +7,7 @@ import FieldCards from './FieldCards'
 
 /**
  * Menu "Stok Lapangan" untuk User & Operation1: langsung daftar lapangan yang ditugaskan
- * (Operation1: lapangan di bawah gudang yang ditugaskan). Satu lapangan → langsung ke detailnya.
+ * (Operation1 bisa memegang beberapa lapangan). Satu lapangan → langsung ke detailnya.
  */
 export default function FieldList() {
   const { user } = useAuth()

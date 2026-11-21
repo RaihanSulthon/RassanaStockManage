@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
-/** PR (Purchasing Requisition): Pak Nurdin (gudang) -> Pak Andi (Purchasing). 1 UR -> 1 PR. */
+/** PR (Purchasing Requisition): Logistic (gudang) -> Purchasing. 1 UR -> 1 PR. */
 class PurchaseRequisitionController extends Controller
 {
     use PresentsDocuments;
@@ -38,7 +38,7 @@ class PurchaseRequisitionController extends Controller
             ->with(['warehouse:id,name,type', 'creator:id,name', 'userRequest:id,number', 'purchaseOrder:id,purchase_requisition_id,number,status'])
             ->withCount('items');
 
-        $actor->hasRole(Role::Operation1)
+        $actor->hasRole(Role::Logistic)
             ? $query->whereIn('warehouse_id', $actor->assignedLocationIds())
             : $query->where('status', '!=', RequestStatus::Draft->value);
 

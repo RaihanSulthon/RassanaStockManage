@@ -12,6 +12,8 @@ import PoDetail from './pages/po/PoDetail'
 import PoList from './pages/po/PoList'
 import PrDetail from './pages/pr/PrDetail'
 import PrList from './pages/pr/PrList'
+import ReceiptDetail from './pages/receipts/ReceiptDetail'
+import ReceiptList from './pages/receipts/ReceiptList'
 import TransferDetail from './pages/transfers/TransferDetail'
 import TransferList from './pages/transfers/TransferList'
 import UrDetail from './pages/ur/UrDetail'
@@ -20,7 +22,7 @@ import WarehouseDetail from './pages/warehouses/WarehouseDetail'
 import WarehouseList from './pages/warehouses/WarehouseList'
 import { ROLES } from './lib/roles'
 
-const { ADMIN, PURCHASING, FINANCE, OPERATION1, USER } = ROLES
+const { ADMIN, PURCHASING, FINANCE, LOGISTIC, OPERATION1, USER } = ROLES
 
 // Pembatasan route hanya untuk UX; hak akses sebenarnya ditegakkan di BE.
 function App() {
@@ -32,8 +34,7 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
 
-          {/* Stok: User melihat lapangannya di sini; role lain lewat menu Gudang. */}
-          {/* Stok lapangan langsung (tanpa lewat gudang): User & Operation1 */}
+          {/* Stok lapangan langsung (tanpa lewat gudang): User & Operation1. Mereka tidak bisa melihat gudang. */}
           <Route element={<ProtectedRoute roles={[USER, OPERATION1]} redirectTo="/warehouses" />}>
             <Route path="/fields" element={<FieldList />} />
             <Route path="/fields/:fieldId" element={<FieldDetail />} />
@@ -41,7 +42,7 @@ function App() {
           <Route path="/stock" element={<Navigate to="/fields" replace />} />
 
           {/* Gudang: stok, barang & harga, vendor, dan lapangan per gudang. */}
-          <Route element={<ProtectedRoute roles={[ADMIN, PURCHASING, FINANCE, OPERATION1]} />}>
+          <Route element={<ProtectedRoute roles={[ADMIN, PURCHASING, FINANCE, LOGISTIC]} redirectTo="/fields" />}>
             <Route path="/warehouses" element={<WarehouseList />} />
             <Route path="/warehouses/:id" element={<WarehouseDetail />} />
             <Route path="/warehouses/:warehouseId/fields/:fieldId" element={<FieldDetail />} />
@@ -51,18 +52,28 @@ function App() {
 
           <Route element={<ProtectedRoute roles={[USER, OPERATION1, ADMIN]} />}>
             <Route path="/usage" element={<Usage />} />
+          </Route>
+
+          {/* Pengiriman gudang -> lapangan: dikirim Logistic, diterima Operation1/User, dipantau role lain. */}
+          <Route element={<ProtectedRoute roles={[USER, OPERATION1, LOGISTIC, ADMIN, PURCHASING, FINANCE]} />}>
             <Route path="/transfers" element={<TransferList />} />
             <Route path="/transfers/new" element={<TransferDetail />} />
             <Route path="/transfers/:id" element={<TransferDetail />} />
           </Route>
 
-          <Route element={<ProtectedRoute roles={[USER, OPERATION1, ADMIN, PURCHASING, FINANCE]} />}>
+          {/* Penerimaan barang vendor di gudang (rekap) */}
+          <Route element={<ProtectedRoute roles={[LOGISTIC, ADMIN, PURCHASING, FINANCE]} />}>
+            <Route path="/receipts" element={<ReceiptList />} />
+            <Route path="/receipts/:id" element={<ReceiptDetail />} />
+          </Route>
+
+          <Route element={<ProtectedRoute roles={[OPERATION1, LOGISTIC, ADMIN, PURCHASING, FINANCE]} />}>
             <Route path="/ur" element={<UrList />} />
             <Route path="/ur/new" element={<UrDetail />} />
             <Route path="/ur/:id" element={<UrDetail />} />
           </Route>
 
-          <Route element={<ProtectedRoute roles={[OPERATION1, ADMIN, PURCHASING, FINANCE]} />}>
+          <Route element={<ProtectedRoute roles={[LOGISTIC, ADMIN, PURCHASING, FINANCE]} />}>
             <Route path="/pr" element={<PrList />} />
             <Route path="/pr/new" element={<PrDetail />} />
             <Route path="/pr/:id" element={<PrDetail />} />

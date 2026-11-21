@@ -10,7 +10,7 @@ class UsagePolicy
 {
     public function create(User $actor): bool
     {
-        return $actor->hasRole(Role::User);
+        return $actor->role->isFieldRole();
     }
 
     public function view(User $actor, Usage $usage): bool

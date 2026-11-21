@@ -3,39 +3,46 @@ import { Alert, Card } from '../components/ui'
 import { useAuth } from '../context/AuthContext'
 import { useApi } from '../lib/hooks'
 
-// Ringkasan tugas tiap role sesuai activity diagram
+// Ringkasan tugas tiap role
 const GUIDE = {
   user: [
-    'Catat pemakaian barang setiap hari di menu Pemakaian Harian.',
-    'Lihat saldo stok lapangan harian di menu Saldo Stok.',
-    'Buat permintaan barang (UR) ke gudang, lalu kirim ke Operation.',
-    'Saat barang dari gudang sampai, catat penerimaannya.',
+    'Saat kiriman dari gudang sampai, hitung barangnya lalu catat jumlah yang diterima di menu Penerimaan Barang.',
+    'Catat pemakaian barang & bahan setiap hari di menu Pemakaian Harian.',
+    'Pantau stok lapangan harian di menu Stok Lapangan.',
   ],
   operation1: [
-    'Terima UR dari lapangan dan evaluasi.',
-    'Hitung stok gudang (harian, mingguan, bulanan) di menu Stok.',
-    'Buat PR berdasarkan UR atau estimasi, mengacu stok minimal & maksimal, lalu kirim ke Purchasing.',
-    'Saat barang vendor datang: cek dengan surat jalan & PO, lalu catat penerimaan (bisa bertahap).',
-    'Kirim barang ke lapangan sesuai kebutuhan.',
+    'Buat permintaan barang (UR) untuk lapangan, lalu kirim ke Logistic gudang.',
+    'Saat kiriman dari gudang sampai, hitung barangnya lalu catat jumlah yang diterima di menu Penerimaan Barang.',
+    'Catat pemakaian barang & bahan setiap hari di menu Pemakaian Harian.',
+    'Pantau stok lapangan di menu Stok Lapangan.',
+  ],
+  logistic: [
+    'Kelola barang & bahan gudang (nama, jenis, satuan, min/max) di menu Gudang.',
+    'Saat barang vendor datang: cek dengan surat jalan & PO, lalu catat penerimaannya di menu PO.',
+    'Evaluasi UR dari lapangan: kirim dari stok gudang, atau buat PR ke Purchasing.',
+    'Kirim barang ke lapangan di menu Pengiriman ke Lapangan. Stok gudang langsung berkurang.',
+    'Tindak lanjuti selisih kiriman (hilang / belum terkirim / tertinggal di perjalanan).',
+    'Pantau stok gudang sebelum & sesudah setiap penerimaan dan pengiriman lewat rekap.',
   ],
   purchasing: [
     'Terima PR dan validasi dengan data stok gudang & lapangan.',
     'Buat PO ke vendor beserta harga, lalu kirim ke Finance untuk approval.',
     'Revisi PO jika diminta Finance. Setelah disetujui, kirim PO ke vendor.',
-    'Kelola master barang (min/max stok, harga) dan vendor.',
+    'Kelola harga barang dan vendor.',
   ],
   finance: [
     'Validasi & verifikasi PO dari Purchasing: setujui atau minta revisi.',
     'Setelah barang diterima gudang, cek PO + surat jalan + data penerimaan.',
     'Siapkan pembayaran (catat tagihan vendor), lalu lakukan pembayaran.',
+    'Kelola harga barang bersama Purchasing.',
   ],
-  admin: ['Buat gudang & lapangan di menu Lokasi.', 'Kelola akun dan penugasan lokasi di Kelola User.', 'Pantau seluruh dokumen dan stok.', 'Isi saldo awal / penyesuaian stok dari menu Stok.'],
+  admin: ['Buat gudang & lapangan di menu Gudang.', 'Kelola akun dan penugasan lokasi di Kelola User.', 'Pantau seluruh dokumen dan stok.'],
 }
 
 export default function Dashboard() {
   const { user } = useAuth()
   const { data, error } = useApi('/dashboard')
-  const noLocation = ['operation1', 'user'].includes(user.role) && !user.locations?.length
+  const noLocation = ['logistic', 'operation1', 'user'].includes(user.role) && !user.locations?.length
 
   return (
     <div className="space-y-4">
@@ -47,7 +54,7 @@ export default function Dashboard() {
         </p>
       </Card>
 
-      {noLocation && <Alert kind="warn">Akun Anda belum ditugaskan ke {user.role === 'user' ? 'lapangan' : 'gudang'}. Minta Admin mengatur lokasi di Kelola User.</Alert>}
+      {noLocation && <Alert kind="warn">Akun Anda belum ditugaskan ke {user.role === 'logistic' ? 'gudang' : 'lapangan'}. Minta Admin mengatur lokasi di Kelola User.</Alert>}
       <Alert>{error}</Alert>
 
       <Card>

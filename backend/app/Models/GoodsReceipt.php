@@ -31,6 +31,11 @@ class GoodsReceipt extends Model
         return $this->belongsTo(PurchaseOrder::class);
     }
 
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Location::class, 'warehouse_id');
+    }
+
     public function receiver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'received_by');

@@ -17,7 +17,7 @@ const inactiveBadge = (row) =>
 
 /**
  * Menu Gudang: pilih gudang dulu, lalu kelola stok, barang & harga, vendor, dan lapangan di dalamnya.
- * Admin/Purchasing/Finance melihat semua gudang; Operation hanya gudang yang ditugaskan.
+ * Admin/Purchasing/Finance melihat semua gudang; Logistic hanya gudang yang ditugaskan.
  */
 export default function WarehouseList() {
   const { user } = useAuth();
@@ -43,7 +43,7 @@ export default function WarehouseList() {
     l.name.toLowerCase().includes(q) ||
     (l.address || "").toLowerCase().includes(q);
 
-  // Operation dengan satu gudang langsung masuk ke gudangnya.
+  // Logistic dengan satu gudang langsung masuk ke gudangnya.
   if (!privileged && data && warehouses.length === 1)
     return <Navigate to={`/warehouses/${warehouses[0].id}`} replace />;
 

@@ -62,7 +62,9 @@ export default function StockChangeModal({ location, onClose, onDone }) {
   const [busy, setBusy] = useState(false)
 
   const cfg = mode && MODES[mode]
-  const now = (id) => Number(current[id] ?? 0)
+  // Stok lapangan hanya bertambah lewat kiriman gudang: tidak ada "Tambah", hitung fisik tidak boleh naik.
+  const isField = location.type === 'field'
+  const modes = Object.entries(MODES).filter(([m]) => !isField || m !== 'add')
 
   // Hitung perubahan per barang dari isian.
   const lines = useMemo(
@@ -79,10 +81,11 @@ export default function StockChangeModal({ location, onClose, onDone }) {
           else if (mode !== 'set' && n === 0) problem = 'Jumlah harus lebih dari 0.'
           else delta = mode === 'add' ? n : mode === 'subtract' ? -n : n - before
           if (!problem && before + delta < 0) problem = `Melebihi stok sekarang (${formatQty(before)}).`
+          if (!problem && isField && delta > 0) problem = `Tidak boleh melebihi stok sistem (${formatQty(before)}). Kelebihan barang harus lewat kiriman gudang.`
         }
         return { item: it, raw, filled, before, delta, after: before + delta, problem }
       }),
-    [items, qty, current, mode],
+    [items, qty, current, mode, isField],
   )
   const changed = lines.filter((l) => l.filled && !l.problem && l.delta !== 0)
   const problems = lines.filter((l) => l.problem)
@@ -151,8 +154,8 @@ export default function StockChangeModal({ location, onClose, onDone }) {
       {step === 'choose' && (
         <>
           <p className="mb-3 text-sm text-slate-600">Apa yang ingin Anda lakukan dengan stok di {kind.toLowerCase()} ini?</p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {Object.entries(MODES).map(([m, c]) => (
+          <div className={`grid gap-3 ${modes.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+            {modes.map(([m, c]) => (
               <button
                 key={m}
                 onClick={() => pickMode(m)}
@@ -167,8 +170,17 @@ export default function StockChangeModal({ location, onClose, onDone }) {
           <div className="mt-4" />
           <Alert kind="info">
             <span className="text-xs">
-              Barang masuk dari PO, pengiriman gudang ke lapangan, dan pemakaian harian <b>tidak perlu</b> dicatat di sini, karena sudah tercatat otomatis lewat menunya masing-masing.
-              Gunakan Ubah Stok hanya untuk kejadian di luar itu.
+              {isField ? (
+                <>
+                  Stok lapangan <b>hanya bertambah lewat kiriman dari gudang</b> (catat di menu Penerimaan Barang). Pemakaian harian dicatat di menu Pemakaian Harian.
+                  Di sini hanya untuk barang yang berkurang di luar pemakaian (rusak, hilang) atau koreksi hasil hitung fisik.
+                </>
+              ) : (
+                <>
+                  Barang masuk dari PO dan pengiriman ke lapangan <b>tidak perlu</b> dicatat di sini, karena sudah tercatat otomatis lewat menunya masing-masing.
+                  Gunakan Ubah Stok hanya untuk kejadian di luar itu.
+                </>
+              )}
             </span>
           </Alert>
           <div className="mt-4 flex justify-end">
@@ -203,7 +215,7 @@ export default function StockChangeModal({ location, onClose, onDone }) {
 
           <p className="mb-2 text-sm text-slate-600">
             {mode === 'set'
-              ? 'Isi kolom "Jumlah fisik" hanya untuk barang yang sudah dihitung. Barang yang dikosongkan tidak berubah.'
+              ? `Isi kolom "Jumlah fisik" hanya untuk barang yang sudah dihitung. Barang yang dikosongkan tidak berubah.${isField ? ' Jumlah fisik di lapangan tidak boleh melebihi stok sistem.' : ''}`
               : `Isi kolom "${cfg.input}" hanya untuk barang yang berubah. Barang yang dikosongkan tidak berubah.`}
           </p>
 

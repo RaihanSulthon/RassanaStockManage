@@ -35,7 +35,7 @@ export default function UrDetail() {
   const locId = doc?.field?.id || form.field_id || (fields.length === 1 ? fields[0].id : null)
   const items = useItems(locId) // barang milik gudang induk lapangan
   const fieldStock = useApi(locId ? '/stock/balances' : null, { location_id: locId }).data?.data || {}
-  const whId = user.role === 'operation1' ? doc?.warehouse?.id : null
+  const whId = user.role === 'logistic' ? doc?.warehouse?.id : null // stok gudang hanya untuk Logistic
   const whStock = useApi(whId ? '/stock/balances' : null, { location_id: whId }).data?.data || {}
 
   if (d.loading) return <Card>Memuat...</Card>
@@ -130,8 +130,8 @@ export default function UrDetail() {
             {can.submit && (
               <>
                 <span className="mr-auto text-sm text-slate-500">Pastikan data sudah benar. Klik Edit di atas jika masih perlu diubah.</span>
-                <Button disabled={busy} onClick={() => d.action('submit', 'submit', { confirm: 'Kirim UR ke Operation? Setelah dikirim, UR tidak bisa diubah lagi.', ok: 'UR terkirim ke Operation.' })}>
-                  {d.busy === 'submit' ? 'Mengirim...' : 'Kirim ke Operation'}
+                <Button disabled={busy} onClick={() => d.action('submit', 'submit', { confirm: 'Kirim UR ke Logistic gudang? Setelah dikirim, UR tidak bisa diubah lagi.', ok: 'UR terkirim ke Logistic.' })}>
+                  {d.busy === 'submit' ? 'Mengirim...' : 'Kirim ke Logistic'}
                 </Button>
               </>
             )}

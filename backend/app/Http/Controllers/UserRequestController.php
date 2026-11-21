@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
-/** UR (User Request): Pak Haryono (lapangan) -> Pak Nurdin (gudang). */
+/** UR (User Request): Operation1 (lapangan) -> Logistic (gudang induk). */
 class UserRequestController extends Controller
 {
     use PresentsDocuments;
@@ -35,9 +35,10 @@ class UserRequestController extends Controller
             ->withCount('items');
 
         match (true) {
-            $actor->hasRole(Role::User) => $query->whereIn('field_id', $actor->assignedLocationIds()),
-            $actor->hasRole(Role::Operation1) => $query->whereIn('warehouse_id', $actor->assignedLocationIds())
+            $actor->hasRole(Role::Operation1) => $query->whereIn('field_id', $actor->assignedLocationIds()),
+            $actor->hasRole(Role::Logistic) => $query->whereIn('warehouse_id', $actor->assignedLocationIds())
                 ->where('status', '!=', RequestStatus::Draft->value),
+            $actor->hasRole(Role::User) => $query->whereRaw('1 = 0'),
             default => $query->where('status', '!=', RequestStatus::Draft->value),
         };
 
@@ -119,9 +120,9 @@ class UserRequestController extends Controller
                 throw ValidationException::withMessages(['items' => ['UR belum memiliki barang.']]);
             }
             $ur->update(['status' => RequestStatus::Submitted, 'submitted_at' => now()]);
-            $ur->addLog($actor, 'submitted', ['to' => 'operation']);
+            $ur->addLog($actor, 'submitted', ['to' => 'logistic']);
 
-            Notifier::role(Role::Operation1, "UR baru: {$ur->number}",
+            Notifier::role(Role::Logistic, "UR baru: {$ur->number}",
                 "{$actor->name} mengirim permintaan barang dari {$ur->field->name}.",
                 "/ur/{$ur->id}", $ur->warehouse_id);
         });
@@ -176,7 +177,7 @@ class UserRequestController extends Controller
         return $data;
     }
 
-    /** Lapangan tempat User ditugaskan (otomatis jika hanya satu). */
+    /** Lapangan tempat Operation1 ditugaskan (otomatis jika hanya satu). */
     private function field(User $actor, ?int $fieldId): Location
     {
         $fields = Location::whereIn('id', $actor->assignedLocationIds())

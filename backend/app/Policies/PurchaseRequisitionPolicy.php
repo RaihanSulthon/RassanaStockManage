@@ -7,17 +7,17 @@ use App\Enums\Role;
 use App\Models\PurchaseRequisition;
 use App\Models\User;
 
-/** PR dibuat Operation (gudang), divalidasi Purchasing yang membuat PO. */
+/** PR dibuat Logistic (gudang), divalidasi Purchasing yang membuat PO. */
 class PurchaseRequisitionPolicy
 {
     public function create(User $actor): bool
     {
-        return $actor->hasRole(Role::Operation1);
+        return $actor->hasRole(Role::Logistic);
     }
 
     public function view(User $actor, PurchaseRequisition $pr): bool
     {
-        if ($actor->hasRole(Role::Operation1)) {
+        if ($actor->hasRole(Role::Logistic)) {
             return $actor->isAssignedTo($pr->warehouse_id);
         }
 
@@ -27,7 +27,7 @@ class PurchaseRequisitionPolicy
 
     public function update(User $actor, PurchaseRequisition $pr): bool
     {
-        return $actor->hasRole(Role::Operation1)
+        return $actor->hasRole(Role::Logistic)
             && $actor->isAssignedTo($pr->warehouse_id)
             && $pr->status === RequestStatus::Draft;
     }

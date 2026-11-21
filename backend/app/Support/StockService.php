@@ -24,6 +24,7 @@ class StockService
     /**
      * @param  float  $delta  + menambah, - mengurangi
      * @param  string|null  $errorKey  key validasi untuk pesan stok tidak cukup (mis. "items.0.quantity")
+     * @return float saldo setelah mutasi
      */
     public static function move(
         int $locationId,
@@ -35,10 +36,10 @@ class StockService
         ?User $user,
         ?string $note = null,
         ?string $errorKey = null,
-    ): void {
+    ): float {
         $delta = round($delta, 3);
         if ($delta == 0.0) {
-            return;
+            return (float) (StockBalance::where(['location_id' => $locationId, 'item_id' => $itemId])->value('quantity') ?? 0);
         }
 
         $balance = StockBalance::firstOrCreate(['location_id' => $locationId, 'item_id' => $itemId], ['quantity' => 0]);
@@ -71,6 +72,8 @@ class StockService
             'user_id' => $user?->id,
             'note' => $note,
         ]);
+
+        return (float) $new;
     }
 
     /** @return array<int, float> item_id => saldo saat ini */

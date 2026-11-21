@@ -31,14 +31,19 @@ class DashboardController extends Controller
 
         switch ($u->role) {
             case Role::User:
-                $tasks[] = ['label' => 'Pemakaian hari ini', 'count' => Usage::whereIn('location_id', $mine)->whereDate('usage_date', today())->whereNull('cancelled_at')->count(), 'url' => '/usage', 'info' => true];
-                $tasks[] = ['label' => 'UR masih draft', 'count' => UserRequest::whereIn('field_id', $mine)->where('status', RequestStatus::Draft->value)->count(), 'url' => '/ur?status=draft'];
-                $tasks[] = ['label' => 'Barang perlu dicatat penerimaannya', 'count' => Transfer::whereIn('to_location_id', $mine)->where('status', TransferStatus::Sent->value)->count(), 'url' => '/transfers?status=sent'];
-                break;
             case Role::Operation1:
+                $tasks[] = ['label' => 'Pemakaian hari ini', 'count' => Usage::whereIn('location_id', $mine)->whereDate('usage_date', today())->whereNull('cancelled_at')->count(), 'url' => '/usage', 'info' => true];
+                $tasks[] = ['label' => 'Kiriman gudang perlu dicatat penerimaannya', 'count' => Transfer::whereIn('to_location_id', $mine)->where('status', TransferStatus::Sent->value)->count(), 'url' => '/transfers?status=sent'];
+                $tasks[] = ['label' => 'Barang susulan ditunggu', 'count' => Transfer::whereIn('to_location_id', $mine)->whereHas('items', fn ($q) => $q->where('shortage_status', 'in_transit'))->count(), 'url' => '/transfers?status=discrepancy'];
+                if ($u->role === Role::Operation1) {
+                    $tasks[] = ['label' => 'UR masih draft', 'count' => UserRequest::whereIn('field_id', $mine)->where('status', RequestStatus::Draft->value)->count(), 'url' => '/ur?status=draft'];
+                }
+                break;
+            case Role::Logistic:
                 $tasks[] = ['label' => 'UR menunggu evaluasi', 'count' => UserRequest::whereIn('warehouse_id', $mine)->where('status', RequestStatus::Submitted->value)->doesntHave('purchaseRequisition')->count(), 'url' => '/ur?status=submitted'];
-                $tasks[] = ['label' => 'PR masih draft', 'count' => PurchaseRequisition::whereIn('warehouse_id', $mine)->where('status', RequestStatus::Draft->value)->count(), 'url' => '/pr?status=draft'];
+                $tasks[] = ['label' => 'Selisih kiriman perlu ditindaklanjuti', 'count' => Transfer::whereIn('from_location_id', $mine)->whereHas('items', fn ($q) => $q->where('shortage_status', 'open'))->count(), 'url' => '/transfers?status=discrepancy'];
                 $tasks[] = ['label' => 'PO menunggu barang datang', 'count' => PurchaseOrder::whereIn('warehouse_id', $mine)->whereIn('status', [PoStatus::Sent->value, PoStatus::PartiallyReceived->value])->count(), 'url' => '/po?status=sent'];
+                $tasks[] = ['label' => 'PR masih draft', 'count' => PurchaseRequisition::whereIn('warehouse_id', $mine)->where('status', RequestStatus::Draft->value)->count(), 'url' => '/pr?status=draft'];
                 $tasks[] = ['label' => 'Barang di bawah stok minimal', 'count' => $this->belowMin($mine), 'url' => '/warehouses'];
                 break;
             case Role::Purchasing:
@@ -54,7 +59,7 @@ class DashboardController extends Controller
                 break;
             case Role::Admin:
                 $tasks[] = ['label' => 'PO menunggu approval', 'count' => PurchaseOrder::where('status', PoStatus::PendingApproval->value)->count(), 'url' => '/po?status=pending_approval', 'info' => true];
-                $tasks[] = ['label' => 'Akun Operation/User belum punya lokasi', 'count' => \App\Models\User::whereIn('role', [Role::Operation1->value, Role::User->value])->doesntHave('locations')->count(), 'url' => '/users'];
+                $tasks[] = ['label' => 'Akun Logistic/Operation/User belum punya lokasi', 'count' => \App\Models\User::whereIn('role', [Role::Logistic->value, Role::Operation1->value, Role::User->value])->doesntHave('locations')->count(), 'url' => '/users'];
                 break;
         }
 

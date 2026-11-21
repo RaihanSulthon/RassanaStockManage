@@ -13,12 +13,23 @@ class TransferItem extends Model
 
     protected function casts(): array
     {
-        return ['quantity_sent' => 'float', 'quantity_received' => 'float'];
+        return ['quantity_sent' => 'float', 'quantity_received' => 'float', 'stock_before' => 'float', 'stock_after' => 'float', 'shortage_resolved_at' => 'datetime'];
     }
 
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    public function resolver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'shortage_resolved_by');
+    }
+
+    /** Jumlah yang belum sampai di lapangan. */
+    public function outstanding(): float
+    {
+        return $this->quantity_received === null ? 0.0 : max(0.0, round($this->quantity_sent - $this->quantity_received, 3));
     }
 
     public function parent(): BelongsTo

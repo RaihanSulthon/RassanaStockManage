@@ -6,22 +6,23 @@ import { useAuth } from '../../context/AuthContext'
 import api from '../../lib/api'
 import { errorMessage } from '../../lib/format'
 import { useApi } from '../../lib/hooks'
-import { isPrivileged } from '../../lib/roles'
+import { isFieldRole, isPrivileged } from '../../lib/roles'
 import { toast } from '../../lib/toast'
 import LocationFormModal from '../warehouses/LocationFormModal'
 
 /**
  * Detail stok satu lapangan. Dua jalur masuk:
- *  - /warehouses/:warehouseId/fields/:fieldId  → dari tab Lapangan di detail gudang (Admin/Purchasing/Finance/Operation1).
+ *  - /warehouses/:warehouseId/fields/:fieldId  → dari tab Lapangan di detail gudang (Admin/Purchasing/Finance/Logistic).
  *  - /fields/:fieldId                          → dari menu "Stok Lapangan" (User/Operation1).
- * Ubah stok lapangan: Admin/Purchasing/Finance, dan User/Operation1 yang punya akses ke lapangan ini.
+ * Ubah stok lapangan: Admin/Purchasing/Finance, dan Operation1/User yang ditugaskan ke lapangan ini.
+ * Stok lapangan hanya BERTAMBAH lewat kiriman gudang (tidak ada "Tambah Stok" di sini).
  */
 export default function FieldDetail() {
   const { warehouseId, fieldId } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
   const isAdmin = user.role === 'admin'
-  const canAdjust = isPrivileged(user.role) || ['user', 'operation1'].includes(user.role)
+  const canAdjust = isPrivileged(user.role) || isFieldRole(user.role)
 
   const { data, loading, error, reload } = useApi('/locations', { all: 1 })
   const all = useMemo(() => data?.data || [], [data])

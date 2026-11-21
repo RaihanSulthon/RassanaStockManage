@@ -66,6 +66,7 @@ export const STATUS_STYLES = {
   sent: 'bg-indigo-100 text-indigo-800',
   partially_received: 'bg-orange-100 text-orange-800',
   received: 'bg-green-100 text-green-800',
+  discrepancy: 'bg-red-100 text-red-700',
   closed: 'bg-slate-300 text-slate-700',
   prepared: 'bg-amber-100 text-amber-800',
   paid: 'bg-green-100 text-green-800',

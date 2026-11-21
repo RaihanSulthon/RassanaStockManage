@@ -20,7 +20,7 @@ class PurchaseOrderPolicy
 
     public function view(User $actor, PurchaseOrder $po): bool
     {
-        if ($actor->hasRole(Role::Operation1)) {
+        if ($actor->hasRole(Role::Logistic)) {
             // Gudang melihat PO yang sudah disetujui (untuk cek barang datang), tanpa harga.
             return $actor->isAssignedTo($po->warehouse_id)
                 && ! in_array($po->status, [PoStatus::Draft, PoStatus::PendingApproval, PoStatus::Revision], true);
@@ -65,7 +65,7 @@ class PurchaseOrderPolicy
 
     public function receive(User $actor, PurchaseOrder $po): bool
     {
-        return $actor->hasRole(Role::Operation1)
+        return $actor->hasRole(Role::Logistic)
             && $actor->isAssignedTo($po->warehouse_id)
             && $po->status->receivable();
     }

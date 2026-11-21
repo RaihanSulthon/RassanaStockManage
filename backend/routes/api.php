@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GoodsReceiptController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\NotificationController;
@@ -41,9 +42,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('locations', LocationController::class)->only(['store', 'update', 'destroy']);
     });
 
-    // Barang & vendor per gudang: Admin, Purchasing, Finance (User dan Operation tidak bisa).
-    Route::middleware('role:admin,purchasing,finance')->group(function () {
+    // Barang per gudang: Admin, Purchasing, Finance, dan Logistic (gudangnya sendiri, tanpa harga).
+    Route::middleware('role:admin,purchasing,finance,logistic')->group(function () {
         Route::apiResource('items', ItemController::class)->only(['store', 'update', 'destroy']);
+    });
+
+    // Vendor per gudang: Admin, Purchasing, Finance.
+    Route::middleware('role:admin,purchasing,finance')->group(function () {
         Route::apiResource('vendors', VendorController::class)->except(['show']);
         Route::post('/locations/{location}/vendors', [VendorController::class, 'attach']);
         Route::delete('/locations/{location}/vendors/{vendor}', [VendorController::class, 'detach']);
@@ -90,9 +95,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/payments/{payment}/pay', [PaymentController::class, 'pay']);
     Route::get('/payments/{payment}/export/{format}', [PaymentController::class, 'export']);
 
+    // ---------- Penerimaan vendor di gudang (rekap) ----------
+    Route::get('/goods-receipts/export/{format}', [GoodsReceiptController::class, 'exportRecap']);
+    Route::get('/goods-receipts', [GoodsReceiptController::class, 'index']);
+    Route::get('/goods-receipts/{goods_receipt}', [GoodsReceiptController::class, 'show']);
+    Route::get('/goods-receipts/{goods_receipt}/export/{format}', [GoodsReceiptController::class, 'export']);
+
     // ---------- Pengiriman gudang -> lapangan ----------
+    Route::get('/transfers/export/{format}', [TransferController::class, 'exportRecap']);
     Route::apiResource('transfers', TransferController::class)->only(['index', 'store', 'show']);
     Route::post('/transfers/{transfer}/receive', [TransferController::class, 'receive']);
+    Route::post('/transfers/{transfer}/receive-late', [TransferController::class, 'receiveLate']);
+    Route::post('/transfers/{transfer}/resolve', [TransferController::class, 'resolve']);
+    Route::get('/transfers/{transfer}/export/{format}', [TransferController::class, 'export']);
 
     // ---------- Kelola user: hanya Admin ----------
     Route::middleware('role:admin')->group(function () {

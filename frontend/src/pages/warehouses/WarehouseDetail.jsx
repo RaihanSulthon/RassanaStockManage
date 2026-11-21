@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import api from '../../lib/api'
 import { errorMessage } from '../../lib/format'
 import { useApi } from '../../lib/hooks'
-import { isPrivileged } from '../../lib/roles'
+import { canManageWarehouse, isPrivileged } from '../../lib/roles'
 import { toast } from '../../lib/toast'
 import FieldsTab from './FieldsTab'
 import ItemsTab from './ItemsTab'
@@ -16,7 +16,8 @@ import VendorsTab from './VendorsTab'
 /**
  * Satu gudang: stok gudang ini saja, barang & harga, vendor, dan daftar lapangan.
  * Stok lapangan dibuka lewat tab Lapangan → halaman detail lapangan.
- * Ubah stok gudang: Admin/Purchasing/Finance (Operation1 hanya melihat).
+ * Ubah stok gudang: Admin/Purchasing/Finance (semua gudang) dan Logistic (gudang yang ditugaskan).
+ * Operation1/User tidak bisa membuka halaman ini.
  */
 export default function WarehouseDetail() {
   const { id } = useParams()
@@ -110,7 +111,7 @@ export default function WarehouseDetail() {
         ))}
       </div>
 
-      {tab === 'stok' && <StockPanel key={warehouse.id} location={warehouse} canAdjust={privileged} />}
+      {tab === 'stok' && <StockPanel key={warehouse.id} location={warehouse} canAdjust={canManageWarehouse(user.role)} />}
       {tab === 'barang' && <ItemsTab warehouse={warehouse} onChanged={reload} />}
       {tab === 'vendor' && privileged && <VendorsTab warehouse={warehouse} onChanged={reload} />}
       {tab === 'lapangan' && <FieldsTab warehouse={warehouse} fields={fields} canManage={isAdmin} reload={reload} />}

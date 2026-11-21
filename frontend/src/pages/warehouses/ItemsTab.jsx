@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import api from '../../lib/api'
 import { UNITS, errorMessage, formatMoney, formatQty } from '../../lib/format'
 import { useApi, useDebounced } from '../../lib/hooks'
-import { isPrivileged } from '../../lib/roles'
+import { canManageWarehouse, isPrivileged } from '../../lib/roles'
 import { toast } from '../../lib/toast'
 
 const emptyForm = { name: '', category: 'bahan', unit: '', min_stock: '', max_stock: '', price: '', note: '', is_active: true }
@@ -15,11 +15,12 @@ const toForm = (r) => ({
 
 /**
  * Barang & bahan milik gudang ini, dengan min/max dan harga acuan khusus gudang ini.
- * Kelola: Admin/Purchasing/Finance. Operation hanya melihat (tanpa harga).
+ * Kelola: Admin/Purchasing/Finance (dengan harga) dan Logistic gudang ini (tanpa harga).
  */
 export default function ItemsTab({ warehouse, onChanged }) {
   const { user } = useAuth()
-  const canManage = isPrivileged(user.role)
+  const canManage = canManageWarehouse(user.role)
+  const canPrice = isPrivileged(user.role)
   const [search, setSearch] = useState('')
   const q = useDebounced(search.trim())
   const [category, setCategory] = useState('')
@@ -43,6 +44,7 @@ export default function ItemsTab({ warehouse, onChanged }) {
     setErrors({})
     try {
       const payload = { ...Object.fromEntries(Object.entries(form).map(([k, v]) => [k, v === '' ? null : v])), warehouse_id: warehouse.id }
+      if (!canPrice) delete payload.price // harga diatur Purchasing/Finance
       if (modal.id) await api.put(`/items/${modal.id}`, payload)
       else await api.post('/items', payload)
       toast(modal.id ? 'Perubahan barang tersimpan.' : `"${form.name}" ditambahkan ke Gudang ${warehouse.name}.`)
@@ -113,7 +115,7 @@ export default function ItemsTab({ warehouse, onChanged }) {
             { label: 'Satuan', render: (r) => r.unit },
             { label: 'Stok gudang', className: 'text-right font-semibold', render: (r) => formatQty(stock[r.id] ?? 0) },
             { label: 'Min / Max', className: 'text-right whitespace-nowrap text-slate-500', render: (r) => `${formatQty(r.min_stock)} / ${formatQty(r.max_stock)}` },
-            ...(canManage
+            ...(canPrice
               ? [{ label: 'Harga satuan', className: 'text-right whitespace-nowrap', render: (r) => (r.price == null ? <span className="text-amber-600">Belum diisi</span> : formatMoney(r.price)) }]
               : []),
             { label: 'Status', render: (r) => (r.is_active ? 'Aktif' : 'Nonaktif') },
@@ -164,10 +166,12 @@ export default function ItemsTab({ warehouse, onChanged }) {
                 <input type="number" min="0" step="any" value={form.max_stock} onChange={set('max_stock')} className={inputClass} />
               </Field>
             </div>
-            <Field label="Harga satuan acuan (Rp)" error={errors.price?.[0]}>
-              <input type="number" min="0" step="any" value={form.price} onChange={set('price')} className={inputClass} />
-              <p className="mt-1 text-xs text-slate-400">Harga acuan untuk gudang ini. Harga final ditentukan di setiap PO.</p>
-            </Field>
+            {canPrice && (
+              <Field label="Harga satuan acuan (Rp)" error={errors.price?.[0]}>
+                <input type="number" min="0" step="any" value={form.price} onChange={set('price')} className={inputClass} />
+                <p className="mt-1 text-xs text-slate-400">Harga acuan untuk gudang ini. Harga final ditentukan di setiap PO.</p>
+              </Field>
+            )}
             <Field label="Catatan" error={errors.note?.[0]}>
               <input value={form.note} maxLength={255} onChange={set('note')} className={inputClass} />
             </Field>

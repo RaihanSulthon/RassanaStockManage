@@ -6,7 +6,7 @@ import { formatDate, formatDateTime } from '../../lib/format'
 
 export default function PrList() {
   const { user } = useAuth()
-  const isOp = user.role === 'operation1'
+  const isOp = user.role === 'logistic' // pembuat PR
 
   return (
     <DocList

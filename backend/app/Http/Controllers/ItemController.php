@@ -17,8 +17,8 @@ use Illuminate\Validation\ValidationException;
 /**
  * Barang & bahan milik satu gudang (lapangan memakai barang milik gudang induknya).
  * Semua role bisa melihat barang di lokasi yang boleh ia lihat, tetapi harga hanya untuk
- * Purchasing/Finance/Admin dan min/max hanya untuk Operation ke atas.
- * Tambah/ubah oleh Purchasing/Finance/Admin.
+ * Purchasing/Finance/Admin dan min/max hanya untuk role gudang ke atas (bukan Operation1/User).
+ * Tambah/ubah: Purchasing/Finance/Admin (semua gudang) dan Logistic (gudang yang ditugaskan, tanpa harga).
  */
 class ItemController extends Controller
 {
@@ -51,6 +51,8 @@ class ItemController extends Controller
             'warehouse_id' => ['required', 'integer', Rule::exists('locations', 'id')->where('type', LocationType::Warehouse->value)],
         ], ['warehouse_id.required' => 'Pilih gudang.', 'warehouse_id.exists' => 'Gudang tidak ditemukan.']);
 
+        $this->authorizeWarehouse($request->user(), (int) $request->input('warehouse_id'));
+
         $item = Item::create([
             ...$this->validated($request, (int) $request->input('warehouse_id')),
             'warehouse_id' => (int) $request->input('warehouse_id'),
@@ -61,6 +63,7 @@ class ItemController extends Controller
 
     public function update(Request $request, Item $item): JsonResponse
     {
+        $this->authorizeWarehouse($request->user(), $item->warehouse_id);
         $data = $this->validated($request, $item->warehouse_id, $item);
 
         if ($data['unit'] !== $item->unit && $this->isUsed($item)) {
@@ -72,8 +75,9 @@ class ItemController extends Controller
         return response()->json(['data' => $this->present($item, $request->user())]);
     }
 
-    public function destroy(Item $item): JsonResponse
+    public function destroy(Request $request, Item $item): JsonResponse
     {
+        $this->authorizeWarehouse($request->user(), $item->warehouse_id);
         if ($this->isUsed($item)) {
             throw ValidationException::withMessages(['item' => ['Barang sudah dipakai di stok/dokumen. Nonaktifkan saja.']]);
         }
@@ -103,7 +107,22 @@ class ItemController extends Controller
         $data['name'] = trim($data['name']);
         $data['unit'] = trim($data['unit']);
 
+        // Harga hanya diatur Purchasing/Finance/Admin; Logistic tidak bisa mengubahnya.
+        if (! $request->user()->role->isPrivileged()) {
+            unset($data['price']);
+        }
+
         return $data;
+    }
+
+    /** Logistic hanya boleh mengelola barang di gudang yang ditugaskan kepadanya. */
+    private function authorizeWarehouse(User $actor, int $warehouseId): void
+    {
+        abort_unless(
+            $actor->role->isPrivileged() || ($actor->hasRole(Role::Logistic) && $actor->isAssignedTo($warehouseId)),
+            403,
+            'Anda hanya bisa mengelola barang di gudang yang ditugaskan.',
+        );
     }
 
     private function isUsed(Item $item): bool
@@ -127,8 +146,8 @@ class ItemController extends Controller
             'unit' => $i->unit,
             'note' => $i->note,
             'is_active' => $i->is_active,
-            // Min/max acuan PR: terlihat oleh Operation ke atas.
-            ...($actor->hasRole(Role::User) ? [] : ['min_stock' => $i->min_stock, 'max_stock' => $i->max_stock]),
+            // Min/max acuan PR: hanya role gudang ke atas.
+            ...($actor->role->isFieldRole() ? [] : ['min_stock' => $i->min_stock, 'max_stock' => $i->max_stock]),
             // Harga hanya Purchasing/Finance/Admin.
             ...($actor->role->isPrivileged() ? ['price' => $i->price] : []),
         ];

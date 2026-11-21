@@ -6,19 +6,19 @@ import { formatDate, formatDateTime } from '../../lib/format'
 
 export default function UrList() {
   const { user } = useAuth()
-  const isUser = user.role === 'user'
+  const isOp = user.role === 'operation1' // pembuat UR
 
   return (
     <DocList
-      title={isUser ? 'User Request (UR)' : 'UR Masuk'}
-      subtitle={isUser ? 'Permintaan barang dari lapangan ke gudang.' : 'Permintaan barang dari lapangan. Evaluasi lalu buatkan PR atau kirim barang.'}
+      title={isOp ? 'User Request (UR)' : 'UR Masuk'}
+      subtitle={isOp ? 'Permintaan barang dari lapangan ke Logistic gudang.' : 'Permintaan barang dari lapangan. Evaluasi lalu kirim dari stok gudang atau buatkan PR.'}
       endpoint="/user-requests"
       statuses={[
-        ...(isUser ? [['draft', 'Draft']] : []),
-        ['submitted', 'Menunggu Operation'],
+        ...(isOp ? [['draft', 'Draft']] : []),
+        ['submitted', 'Menunggu Logistic'],
         ['processed', 'Sudah dibuat PR'],
       ]}
-      actions={isUser && <LinkButton to="/ur/new">+ Buat UR</LinkButton>}
+      actions={isOp && <LinkButton to="/ur/new">+ Buat UR</LinkButton>}
       columns={[
         { label: 'Nomor', render: (r) => <Link to={`/ur/${r.id}`} className="font-medium text-blue-600 hover:underline">{r.number}</Link> },
         { label: 'Lapangan', render: (r) => r.field?.name },

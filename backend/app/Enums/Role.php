@@ -3,19 +3,23 @@
 namespace App\Enums;
 
 /**
- * Pembagian tugas (lihat activity diagram):
- *  - User (Pak Haryono)       : pemakaian harian, saldo lapangan, UR, terima barang dari gudang.
- *  - Operation1 (Pak Nurdin)  : evaluasi UR, hitung stok gudang, PR, terima barang vendor, kirim ke lapangan.
- *  - Purchasing (Pak Andi)    : validasi PR, PO + harga, master barang (min/max, harga), vendor.
- *  - Finance (Pak Fauzan)     : approval PO, pembayaran ke vendor.
- *  - Admin                    : kelola user, lihat semua data.
- *  Ubah stok manual: stok gudang oleh Admin/Purchasing/Finance; stok lapangan juga oleh User/Operation1 yang ditugaskan.
+ * Pembagian tugas:
+ *  - User (orang lapangan/dapur) : terima barang dari gudang, pemakaian harian, stok lapangannya.
+ *  - Operation1 (lapangan)       : buat UR, terima barang dari gudang, pemakaian harian, stok lapangan yang ditugaskan.
+ *  - Logistic (gudang)           : master barang (tanpa harga), evaluasi UR, PR, terima barang vendor,
+ *                                  kirim ke lapangan, tindak lanjut selisih kiriman, stok gudang yang ditugaskan.
+ *  - Purchasing                  : validasi PR, PO + harga, harga barang, vendor.
+ *  - Finance                     : approval PO, harga barang, pembayaran ke vendor.
+ *  - Admin                       : kelola user & lokasi, lihat semua data.
+ *  User & Operation1 tidak bisa melihat stok gudang sama sekali.
+ *  Ubah stok gudang: Admin/Purchasing/Finance + Logistic (gudangnya). Stok lapangan hanya bertambah lewat kiriman gudang.
  */
 enum Role: string
 {
     case Admin = 'admin';
     case Purchasing = 'purchasing';
     case Finance = 'finance';
+    case Logistic = 'logistic';
     case Operation1 = 'operation1';
     case User = 'user';
 
@@ -25,6 +29,7 @@ enum Role: string
             self::Admin => 'Admin',
             self::Purchasing => 'Purchasing',
             self::Finance => 'Finance',
+            self::Logistic => 'Logistic',
             self::Operation1 => 'Operation1',
             self::User => 'User',
         };
@@ -34,6 +39,12 @@ enum Role: string
     public function isPrivileged(): bool
     {
         return in_array($this, [self::Admin, self::Purchasing, self::Finance], true);
+    }
+
+    /** Role yang bekerja di lapangan (ditugaskan ke lapangan, tidak melihat gudang). */
+    public function isFieldRole(): bool
+    {
+        return in_array($this, [self::Operation1, self::User], true);
     }
 
     /**

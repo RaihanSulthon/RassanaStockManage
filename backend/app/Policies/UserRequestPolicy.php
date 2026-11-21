@@ -7,24 +7,24 @@ use App\Enums\Role;
 use App\Models\User;
 use App\Models\UserRequest;
 
-/** UR dibuat User (lapangan), dievaluasi Operation (gudang induk). */
+/** UR dibuat Operation1 (lapangan), dievaluasi Logistic (gudang induk). */
 class UserRequestPolicy
 {
     public function create(User $actor): bool
     {
-        return $actor->hasRole(Role::User);
+        return $actor->hasRole(Role::Operation1);
     }
 
     public function view(User $actor, UserRequest $ur): bool
     {
         return ($actor->role->isPrivileged() && $ur->status !== RequestStatus::Draft)
-            || ($actor->hasRole(Role::User) && $actor->isAssignedTo($ur->field_id))
-            || ($actor->hasRole(Role::Operation1) && $actor->isAssignedTo($ur->warehouse_id) && $ur->status !== RequestStatus::Draft);
+            || ($actor->hasRole(Role::Operation1) && $actor->isAssignedTo($ur->field_id))
+            || ($actor->hasRole(Role::Logistic) && $actor->isAssignedTo($ur->warehouse_id) && $ur->status !== RequestStatus::Draft);
     }
 
     public function update(User $actor, UserRequest $ur): bool
     {
-        return $actor->hasRole(Role::User)
+        return $actor->hasRole(Role::Operation1)
             && $actor->isAssignedTo($ur->field_id)
             && $ur->status === RequestStatus::Draft;
     }
@@ -39,10 +39,10 @@ class UserRequestPolicy
         return $this->update($actor, $ur);
     }
 
-    /** Operation membuat PR dari UR ini, atau mengirim barang ke lapangan berdasarkan UR ini. */
+    /** Logistic membuat PR dari UR ini, atau mengirim barang ke lapangan berdasarkan UR ini. */
     public function process(User $actor, UserRequest $ur): bool
     {
-        return $actor->hasRole(Role::Operation1)
+        return $actor->hasRole(Role::Logistic)
             && $actor->isAssignedTo($ur->warehouse_id)
             && $ur->status !== RequestStatus::Draft;
     }

@@ -132,7 +132,10 @@ class UserController extends Controller
     }
 
     /**
-     * Penugasan lokasi sesuai role: Operation -> gudang (boleh lebih dari satu), User -> tepat satu lapangan.
+     * Penugasan lokasi sesuai role:
+     *  - Logistic   -> gudang (boleh lebih dari satu)
+     *  - Operation1 -> lapangan (boleh lebih dari satu)
+     *  - User       -> tepat satu lapangan
      * Role lain tidak ditugaskan ke lokasi (melihat semua).
      *
      * @return array<int, int>
@@ -140,8 +143,8 @@ class UserController extends Controller
     private function locationIds(string $role, array $ids): array
     {
         $type = match ($role) {
-            Role::Operation1->value => LocationType::Warehouse,
-            Role::User->value => LocationType::Field,
+            Role::Logistic->value => LocationType::Warehouse,
+            Role::Operation1->value, Role::User->value => LocationType::Field,
             default => null,
         };
         if (! $type) {
@@ -151,10 +154,10 @@ class UserController extends Controller
         $valid = Location::whereIn('id', $ids)->where('type', $type->value)->pluck('id')->all();
         if (count($valid) !== count(array_unique($ids))) {
             throw ValidationException::withMessages(['location_ids' => [
-                $type === LocationType::Warehouse ? 'Operation hanya bisa ditugaskan ke gudang.' : 'User hanya bisa ditugaskan ke lapangan.',
+                $type === LocationType::Warehouse ? 'Logistic hanya bisa ditugaskan ke gudang.' : 'Operation dan User hanya bisa ditugaskan ke lapangan.',
             ]]);
         }
-        if ($type === LocationType::Field && count($valid) > 1) {
+        if ($role === Role::User->value && count($valid) > 1) {
             throw ValidationException::withMessages(['location_ids' => ['User hanya bisa ditugaskan ke satu lapangan.']]);
         }
 

@@ -9,7 +9,9 @@ use App\Http\Controllers\Concerns\PresentsDocuments;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\StockMovement;
+use App\Models\User;
 use App\Support\DocumentExport;
+use App\Support\Fmt;
 use App\Support\LineItems;
 use App\Support\StockService;
 use Illuminate\Http\JsonResponse;
@@ -115,10 +117,14 @@ class StockController extends Controller
 
     /**
      * Ubah stok manual (tercatat sebagai mutasi penyesuaian).
-     *  - mode "add"      : quantity = jumlah yang ditambahkan.
+     *  - mode "add"      : quantity = jumlah yang ditambahkan (hanya gudang).
      *  - mode "subtract" : quantity = jumlah yang dikurangi.
      *  - mode "set"      : quantity = jumlah fisik sebenarnya (stock opname); sistem mencatat selisihnya.
-     * Stok gudang: Admin/Purchasing/Finance. Stok lapangan: role tersebut + User/Operation1 yang punya akses ke lapangan itu.
+     *
+     * Gudang  : Admin/Purchasing/Finance, atau Logistic di gudang yang ditugaskan.
+     * Lapangan: Admin/Purchasing/Finance, atau Operation1/User di lapangan yang ditugaskan.
+     *           Stok lapangan hanya boleh BERTAMBAH lewat kiriman gudang, jadi di lapangan
+     *           tidak ada "tambah" dan hitung fisik tidak boleh melebihi stok sistem.
      */
     public function adjust(Request $request): JsonResponse
     {
@@ -141,17 +147,28 @@ class StockController extends Controller
         $location = Location::findOrFail($data['location_id']);
         $this->authorizeAdjust($request->user(), $location);
         LineItems::assertWarehouse($data['items'], $location->warehouseId());
+        $isField = $location->type === LocationType::Field;
+
+        if ($isField && $data['mode'] === 'add') {
+            throw ValidationException::withMessages(['mode' => ['Stok lapangan hanya bertambah lewat kiriman dari gudang.']]);
+        }
 
         $changes = 0;
-        DB::transaction(function () use ($data, $request, &$changes) {
+        DB::transaction(function () use ($data, $request, $isField, &$changes) {
             $current = StockService::balances($data['location_id']);
             foreach ($data['items'] as $i => $line) {
                 $qty = (float) $line['quantity'];
+                $before = $current[$line['item_id']] ?? 0;
                 $delta = round(match ($data['mode']) {
                     'add' => $qty,
                     'subtract' => -$qty,
-                    'set' => $qty - ($current[$line['item_id']] ?? 0),
+                    'set' => $qty - $before,
                 }, 3);
+                if ($isField && $delta > 0) {
+                    throw ValidationException::withMessages(["items.{$i}.quantity" => [
+                        'Hitung fisik di lapangan tidak boleh melebihi stok sistem ('.Fmt::qty($before).'). Kelebihan barang harus lewat kiriman gudang.',
+                    ]]);
+                }
                 if ($delta != 0.0) {
                     StockService::move($data['location_id'], (int) $line['item_id'], $delta, MovementType::Adjustment,
                         $data['date'], null, $request->user(), $data['note'], "items.{$i}.quantity");
@@ -163,18 +180,18 @@ class StockController extends Controller
         return response()->json(['message' => $changes ? "Stok {$location->name} diperbarui ({$changes} barang)." : 'Tidak ada perubahan stok.']);
     }
 
-    private function authorizeAdjust(\App\Models\User $user, Location $location): void
+    private function authorizeAdjust(User $user, Location $location): void
     {
         if ($user->role->isPrivileged()) {
             return;
         }
-        abort_unless(
-            $location->type === LocationType::Field && $user->hasRole(Role::User, Role::Operation1) && $user->canSeeLocation($location->id),
-            403,
-            $location->type === LocationType::Warehouse
-                ? 'Stok gudang hanya bisa diubah oleh Admin, Purchasing, atau Finance.'
-                : 'Anda tidak punya akses untuk mengubah stok lapangan ini.',
-        );
+        $allowed = $location->type === LocationType::Warehouse
+            ? $user->hasRole(Role::Logistic) && $user->isAssignedTo($location->id)
+            : $user->role->isFieldRole() && $user->isAssignedTo($location->id);
+
+        abort_unless($allowed, 403, $location->type === LocationType::Warehouse
+            ? 'Stok gudang hanya bisa diubah oleh Admin, Purchasing, Finance, atau Logistic gudang ini.'
+            : 'Anda tidak punya akses untuk mengubah stok lapangan ini.');
     }
 
     // ---------------------------------------------------------------------

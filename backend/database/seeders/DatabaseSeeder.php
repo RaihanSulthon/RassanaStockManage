@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             ['Admin', 'SEED_ADMIN', Role::Admin],
             ['Purchasing', 'SEED_PURCHASING', Role::Purchasing],
             ['Finance', 'SEED_FINANCE', Role::Finance],
+            ['Logistic', 'SEED_LOGISTIC', Role::Logistic],
             ['Operation1', 'SEED_OPERATION1', Role::Operation1],
             ['User Lapangan', 'SEED_USER', Role::User],
         ];
