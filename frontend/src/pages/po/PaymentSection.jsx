@@ -7,7 +7,7 @@ import { toast } from '../../lib/toast'
 const METHODS = { transfer: 'Transfer Bank', tunai: 'Tunai', lainnya: 'Lainnya' }
 
 /**
- * Pak Fauzan: cek data PO + surat jalan + penerimaan gudang, siapkan pembayaran (catat tagihan),
+ * Finance: cek data PO + surat jalan + penerimaan gudang, siapkan pembayaran (catat tagihan),
  * lalu lakukan pembayaran.
  */
 export default function PaymentSection({ po, onChanged }) {

@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 /**
- * Pak Fauzan: cek PO + surat jalan + penerimaan gudang -> siapkan pembayaran -> lakukan pembayaran.
+ * Finance: cek PO + surat jalan + penerimaan gudang -> siapkan pembayaran -> lakukan pembayaran.
  * Satu baris pembayaran = satu tagihan vendor (PO yang dikirim bertahap bisa punya beberapa tagihan).
  */
 class PaymentController extends Controller

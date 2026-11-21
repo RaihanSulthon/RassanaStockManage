@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-/** PR: permintaan pembelian dari gudang (Pak Nurdin) ke Purchasing (Pak Andi). */
+/** PR: permintaan pembelian dari gudang (Logistic) ke Purchasing. */
 class PurchaseRequisition extends Model
 {
     use IsDocument;

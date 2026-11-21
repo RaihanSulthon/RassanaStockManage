@@ -23,7 +23,7 @@ const toPayload = (f) => ({
   items: f.rows.filter((r) => r.item_id || r.quantity !== '').map((r) => ({ item_id: r.item_id, quantity: r.quantity, note: r.note || null })),
 })
 
-const STEPS = ['Nurdin membuat PR', 'Andi memvalidasi', 'Dibuatkan PO']
+const STEPS = ['Logistic membuat PR', 'Purchasing memvalidasi', 'Dibuatkan PO']
 const stepIndex = { draft: 0, submitted: 1, processed: 2 }
 
 /** Status stok terhadap min/max setelah barang PR datang. */

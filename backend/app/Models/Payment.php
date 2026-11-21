@@ -7,7 +7,7 @@ use App\Models\Concerns\IsDocument;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** Pembayaran tagihan vendor oleh Finance (Pak Fauzan). */
+/** Pembayaran tagihan vendor oleh Finance. */
 class Payment extends Model
 {
     use IsDocument;

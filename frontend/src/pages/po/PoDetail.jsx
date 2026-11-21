@@ -29,7 +29,7 @@ const toPayload = (f) => ({
     .map((r) => ({ item_id: r.item_id, quantity: r.quantity, unit_price: r.unit_price, note: r.note || null })),
 })
 
-const STEPS = ['Andi membuat PO', 'Approval Fauzan', 'Kirim ke vendor', 'Barang diterima gudang']
+const STEPS = ['Purchasing membuat PO', 'Approval Finance', 'Kirim ke vendor', 'Barang diterima gudang']
 const stepIndex = { draft: 0, revision: 0, pending_approval: 1, approved: 2, sent: 3, partially_received: 3, received: 4, closed: 4 }
 
 export default function PoDetail() {

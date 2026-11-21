@@ -257,7 +257,7 @@ class PurchaseRequisitionController extends Controller
             return $data;
         }
 
-        // Data stok gudang + lapangan di bawahnya untuk validasi (Pak Andi) dan acuan min/max.
+        // Data stok gudang + lapangan di bawahnya untuk validasi (Purchasing) dan acuan min/max.
         $fields = $pr->warehouse->children;
         $balances = StockBalance::whereIn('location_id', [$pr->warehouse_id, ...$fields->pluck('id')])
             ->whereIn('item_id', $pr->items->pluck('item_id'))

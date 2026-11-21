@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-/** UR: permintaan barang dari lapangan (Pak Haryono) ke gudang (Pak Nurdin). */
+/** UR: permintaan barang dari lapangan (Operation) ke gudang (Logistic). */
 class UserRequest extends Model
 {
     use IsDocument;

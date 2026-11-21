@@ -7,7 +7,7 @@ import { errorMessage, formatDate, formatDateTime, formatQty, todayISO } from '.
 import { useApi, useItems } from '../lib/hooks'
 import { toast } from '../lib/toast'
 
-/** Catat Pemakaian Harian (Pak Haryono) + riwayat pemakaian. */
+/** Catat Pemakaian Harian (User / Operation di lapangan) + riwayat pemakaian. */
 export default function Usage() {
   const { user } = useAuth()
   const canCreate = ['user', 'operation1'].includes(user.role)

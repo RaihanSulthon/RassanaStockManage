@@ -10,27 +10,28 @@ Aplikasi manajemen stok perusahaan catering: stok bahan & barang di gudang dan l
 
 ## Role & tugas
 
-| Role | Contoh | Tugas di sistem |
+| Role | Lokasi | Tugas di sistem |
 |---|---|---|
-| User | Pak Haryono (lapangan) | Catat pemakaian harian, lihat saldo stok lapangan, buat UR, catat penerimaan barang dari gudang |
-| Operation1 | Pak Nurdin (gudang) | Evaluasi UR, hitung stok gudang, buat PR (acuan min/max), terima barang & surat jalan vendor (bisa bertahap), kirim barang ke lapangan |
-| Purchasing | Pak Andi | Validasi PR dengan data stok, buat PO + harga, revisi PO, kirim PO ke vendor, kelola master barang (min/max, harga) dan vendor |
-| Finance | Pak Fauzan | Approval / minta revisi PO, cek PO + surat jalan + penerimaan gudang, siapkan & lakukan pembayaran |
-| Admin | - | Buat gudang & lapangan, kelola akun & penugasan lokasi, lihat semua data, penyesuaian / saldo awal stok |
+| User | Lapangan (dapur) | Catat pemakaian harian, lihat saldo stok lapangan, catat penerimaan barang dari gudang |
+| Operation1 | Lapangan | Sama seperti User + buat UR ke gudang |
+| Logistic | Gudang | Kelola barang gudang (tanpa harga), evaluasi UR, buat PR (acuan min/max), terima barang vendor (bisa bertahap), kirim barang ke lapangan, tindak lanjut selisih kiriman, ubah stok gudang |
+| Purchasing | Semua | Validasi PR dengan data stok, buat PO + harga, revisi PO, kirim PO ke vendor, kelola master barang (min/max, harga) dan vendor |
+| Finance | Semua | Approval / minta revisi PO, cek PO + surat jalan + penerimaan gudang, siapkan & lakukan pembayaran |
+| Admin | Semua | Buat gudang & lapangan, kelola akun & penugasan lokasi, lihat semua data, ubah stok |
 
-- **Harga** hanya terlihat oleh Purchasing, Finance, dan Admin (di layar maupun PDF/Excel). Operation dan User hanya melihat jumlah & jenis barang.
-- **Lokasi:** beberapa gudang; tiap gudang melayani satu atau beberapa lapangan. Gudang & lapangan hanya dibuat oleh Admin. Vendor dikelola Admin, Purchasing, dan Finance. Operation ditugaskan ke gudang, User ke satu lapangan (diatur Admin di Kelola User). Mereka hanya melihat lokasinya sendiri.
+- **Harga** hanya terlihat oleh Purchasing, Finance, dan Admin (di layar maupun PDF/Excel). Logistic, Operation, dan User hanya melihat jumlah & jenis barang.
+- **Lokasi:** beberapa gudang; tiap gudang melayani satu atau beberapa lapangan. Gudang & lapangan hanya dibuat oleh Admin. Vendor dikelola Admin, Purchasing, dan Finance. Logistic ditugaskan ke gudang, Operation ke satu/lebih lapangan, User ke satu lapangan (diatur Admin di Kelola User). Operation dan User tidak bisa melihat stok gudang sama sekali.
 - Hak akses ditegakkan di backend (`app/Policies` + middleware `role`); frontend hanya mengatur tampilan.
 
 ## Alur (sesuai activity diagram)
 
-1. **User** mencatat pemakaian harian (saldo lapangan berkurang) dan membuat **UR** → kirim ke Operation.
-2. **Operation** mengevaluasi UR, lalu membuat **PR** (1 UR → 1 PR, atau PR estimasi tanpa UR) dengan acuan stok minimal & maksimal → kirim ke Purchasing.
+1. **User / Operation** mencatat pemakaian harian (saldo lapangan berkurang). **Operation** membuat **UR** → kirim ke Logistic.
+2. **Logistic** mengevaluasi UR, lalu membuat **PR** (1 UR → 1 PR, atau PR estimasi tanpa UR) dengan acuan stok minimal & maksimal → kirim ke Purchasing.
 3. **Purchasing** memvalidasi PR (melihat stok gudang & lapangan), membuat **PO** (1 PR → 1 PO) dengan vendor & harga → kirim ke Finance.
-4. **Finance** menyetujui atau meminta revisi. Jika disetujui, sistem memberi notifikasi ke Purchasing (PO valid) dan Operation (PO sudah dibuat dari PR-nya).
+4. **Finance** menyetujui atau meminta revisi. Jika disetujui, sistem memberi notifikasi ke Purchasing (PO valid) dan Logistic (PO sudah dibuat dari PR-nya).
 5. **Purchasing** menandai PO sudah dikirim ke vendor (proses vendor di luar sistem).
-6. **Operation** mencatat penerimaan barang + nomor surat jalan. Bisa bertahap; setiap penerimaan dan selisihnya terhadap PO tercatat di riwayat. Stok gudang bertambah.
-7. **Operation** mengirim barang ke lapangan; **User** mencatat jumlah yang benar-benar diterima (selisih dilaporkan). Stok gudang berkurang, stok lapangan bertambah.
+6. **Logistic** mencatat penerimaan barang + nomor surat jalan. Bisa bertahap; stok gudang sebelum & sesudah tercatat per penerimaan. Stok gudang bertambah.
+7. **Logistic** mengirim barang ke lapangan (stok gudang berkurang); **User / Operation** mencatat jumlah yang benar-benar diterima (stok lapangan bertambah). Jika kurang, Logistic menindaklanjuti: hilang, belum terkirim (kembali ke gudang), atau tertinggal di perjalanan (diterima susulan).
 8. **Finance** mencatat tagihan vendor (dibandingkan dengan total PO dan nilai barang diterima), lalu melakukan pembayaran.
 
 Dokumen dikerjakan di sistem (bukan file). File hanya dibuat saat klik **Generate PDF / Generate Excel**: UR, PR, PO, riwayat penerimaan, laporan saldo stok (harian/mingguan/bulanan), dan bukti pembayaran.

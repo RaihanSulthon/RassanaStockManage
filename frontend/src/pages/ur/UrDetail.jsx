@@ -20,7 +20,7 @@ const toPayload = (f) => ({
   items: f.rows.filter((r) => r.item_id || r.quantity !== '').map((r) => ({ item_id: r.item_id, quantity: r.quantity, note: r.note || null })),
 })
 
-const STEPS = ['Haryono membuat UR', 'Nurdin mengevaluasi', 'Dibuatkan PR']
+const STEPS = ['Operation membuat UR', 'Logistic mengevaluasi', 'Dibuatkan PR']
 const stepIndex = { draft: 0, submitted: 1, processed: 2 }
 
 export default function UrDetail() {

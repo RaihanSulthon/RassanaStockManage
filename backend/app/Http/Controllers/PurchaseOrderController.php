@@ -25,7 +25,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
- * PO: Pak Andi membuat dari PR + menentukan harga -> Pak Fauzan approve/tolak (revisi)
+ * PO: Purchasing membuat dari PR + menentukan harga -> Finance approve/tolak (revisi)
  * -> Purchasing kirim ke vendor -> Logistic mencatat penerimaan di gudang (bisa bertahap).
  */
 class PurchaseOrderController extends Controller
@@ -199,7 +199,7 @@ class PurchaseOrderController extends Controller
         return response()->json(['data' => $this->present($this->load($purchaseOrder->refresh()), $actor)]);
     }
 
-    /** Pak Andi menandai PO sudah dikirim ke vendor (proses vendor di luar sistem). */
+    /** Purchasing menandai PO sudah dikirim ke vendor (proses vendor di luar sistem). */
     public function send(Request $request, PurchaseOrder $purchaseOrder): JsonResponse
     {
         $actor = $request->user();
